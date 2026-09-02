@@ -463,6 +463,21 @@ img{max-width:100%}
     <div class="suggest-list" id="heroSuggest"></div>
   </div>
 </div>
+<script>
+// 清除浏览器自动填充的邮箱
+(function(){
+  function clearAutofill(){
+    var input=document.getElementById('heroInput');
+    if(input&&input.value&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)){
+      input.value='';
+    }
+  }
+  clearAutofill();
+  setTimeout(clearAutofill,100);
+  setTimeout(clearAutofill,500);
+  window.addEventListener('load',clearAutofill);
+})();
+</script>
 
 <!-- HOT TAGS (Removed as per user request) -->
 
