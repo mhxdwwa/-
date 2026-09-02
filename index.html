@@ -451,7 +451,8 @@ img{max-width:100%}
   <p class="hero-subtitle"></p>
   <div class="suggest-wrap">
     <div class="hero-search">
-      <input type="search" id="heroInput" name="hero_search_q" placeholder="输入影片名称..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      <input type="text" style="position:absolute;left:-9999px;top:-9999px;width:0;height:0;opacity:0" tabindex="-1" aria-hidden="true" autocomplete="email" value="">
+      <input type="search" id="heroInput" name="hero_search_q" placeholder="输入影片名称..." autocomplete="nopemail" autocorrect="off" autocapitalize="off" spellcheck="false"
         oninput="onSearchInput(this.value,'heroSuggest')"
         onclick="onSearchInput(this.value,'heroSuggest')"
         onkeydown="onSearchKeydown(event,'heroSuggest')"
