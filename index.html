@@ -1480,7 +1480,7 @@ async function loadHome() {
   ];
 
   // === 第一步：立刻渲染剧名列表（优先从 shows.json 加载）===
-  var html = '<div style="margin-bottom:8px;font-size:13px;color:var(--sub);text-align:center;padding:8px 0 16px">点击剧名即可搜索播放</div>';
+  var html = '';
   var jsonShows = await loadShowsFromJson();
   categories.forEach(function(cat, ci) {
     var names = (jsonShows && jsonShows[cat.key]) || STATIC_FALLBACK_SHOWS[cat.key] || [];
