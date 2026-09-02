@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
 <meta name="referrer" content="never">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob:; child-src blob: https:; worker-src blob: https:; frame-src https:; connect-src https: http:; font-src 'self' https: data:;">
+<!-- CSP removed: was blocking JSONP script injection from API domains, causing all data fetches to fail -->
 <title>闯哥影视</title>
 <link rel="preconnect" href="https://wsrv.nl" crossorigin>
 <link rel="dns-prefetch" href="//wsrv.nl">
@@ -91,9 +91,6 @@ img{max-width:100%}
 .inline-search input{flex:1;padding:0 18px;font-size:15px;background:none;color:var(--text)}
 .inline-search input::placeholder{color:#a0aec0}
 .inline-search button{padding:0 22px;background:var(--accent-g);color:#fff;font-size:14px;font-weight:600}
-
-/* HOT BAR (Hidden as per user request) */
-.hot-bar{display:none !important}
 
 /* MAIN */
 .main{padding:16px 20px 40px}
@@ -398,62 +395,40 @@ img{max-width:100%}
 .dp-error{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:14px;gap:12px;background:rgba(0,0,0,.8);z-index:5}
 .dp-error button{padding:8px 20px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;border:none}
 
-/* RANKING PAGE */
-.rank-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;padding:0 12px}
-.rank-tab{padding:10px 22px;border-radius:24px;font-size:15px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .25s;background:rgba(255,200,160,.06);border:1px solid var(--border);white-space:nowrap}
-.rank-tab:hover{color:var(--accent);border-color:rgba(255,140,107,.3);background:rgba(255,140,107,.1);transform:translateY(-2px)}
-.rank-tab.active{background:var(--accent-g);color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(255,140,107,.3)}
-.rank-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:1100px;margin:0 auto}
-.rank-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border-radius:12px;cursor:pointer;transition:all .3s;border:1px solid var(--border);position:relative;overflow:hidden;min-width:0}
-.rank-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent-g);opacity:0;transition:.3s}
-.rank-item:hover{border-color:rgba(255,140,107,.3);box-shadow:0 4px 20px rgba(255,140,107,.08);transform:translateY(-2px)}
-.rank-item:hover::before{opacity:1}
-.rank-num{min-width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--sub);background:rgba(255,200,160,.06);flex-shrink:0}
-.rank-item:nth-child(1) .rank-num{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1210;box-shadow:0 2px 8px rgba(255,215,0,.3)}
-.rank-item:nth-child(2) .rank-num{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#1a1210;box-shadow:0 2px 8px rgba(192,192,192,.3)}
-.rank-item:nth-child(3) .rank-num{background:linear-gradient(135deg,#cd7f32,#b8690e);color:#fff;box-shadow:0 2px 8px rgba(205,127,50,.3)}
-.rank-name{font-size:14px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.rank-meta{font-size:11px;color:var(--sub);white-space:nowrap;flex-shrink:0}
-.rank-heat{font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:2px}
-@media(max-width:900px){
-  .rank-list{grid-template-columns:repeat(2,1fr);gap:8px}
-  .rank-tab{padding:8px 16px;font-size:13px}
-}
-@media(max-width:520px){
-  .rank-list{grid-template-columns:1fr;gap:6px}
-  .rank-item{padding:10px 12px;gap:8px}
-  .rank-name{font-size:13px}
-}
+/* NAME LIST (no posters) */
+.name-list{display:flex;flex-wrap:wrap;gap:8px}
+.name-item{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--card);border-radius:8px;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;transition:all .25s;border:1px solid var(--border);white-space:nowrap;position:relative}
+.name-item:hover{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.3);color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,107,107,.1)}
+.name-item:active{transform:scale(.96)}
+.name-item .ni-idx{font-size:11px;font-weight:800;color:var(--sub);min-width:16px}
+.name-item:nth-child(-n+3) .ni-idx{color:var(--accent)}
+.name-item .ni-remarks{font-size:11px;color:var(--sub);font-weight:400;margin-left:2px}
+.name-list-loading{display:flex;align-items:center;gap:8px;padding:20px 0;color:var(--sub);font-size:13px}
+.name-list-loading .spin{width:18px;height:18px;border-width:2px;margin:0}
+.name-list-empty{padding:16px 0;color:var(--sub);font-size:13px}
+.name-item.name-top{background:linear-gradient(135deg,rgba(255,107,107,.12),rgba(255,142,142,.08));border-color:rgba(255,107,107,.3);font-weight:700;color:var(--text)}
+.name-item.name-top .ni-idx{color:#fff;background:var(--accent-g);border-radius:4px;padding:0 5px;font-size:10px;min-width:20px;height:18px;display:flex;align-items:center;justify-content:center}
 
-/* TRENDING LIVE SECTIONS */
-.trending-live-section{margin-bottom:40px;animation:fadeUp .45s ease both;background:linear-gradient(135deg,rgba(255,107,107,.04) 0%,rgba(255,142,142,.03) 100%);border-radius:var(--radius);padding:20px 16px;border:1px solid rgba(255,107,107,.1)}
-.trending-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
-.trending-tab{padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .25s;background:rgba(0,0,0,.04);border:1px solid var(--border);white-space:nowrap}
-.trending-tab:hover{color:var(--accent);border-color:rgba(255,107,107,.2);background:rgba(255,107,107,.08);transform:translateY(-1px)}
-.trending-tab.active{background:var(--accent-g);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(255,107,107,.2)}
-.trending-rank-list{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:1800px}
-@media(max-width:1200px){.trending-rank-list{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.trending-rank-list{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px){.trending-rank-list{grid-template-columns:1fr}}
-.trending-rank-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border-radius:12px;cursor:pointer;transition:all .3s;border:1px solid var(--border);position:relative;overflow:hidden;min-width:0}
-.trending-rank-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent-g);opacity:0;transition:.3s}
-.trending-rank-item:hover{border-color:rgba(255,140,107,.3);box-shadow:0 4px 20px rgba(255,140,107,.08);transform:translateY(-2px)}
-.trending-rank-item:hover::before{opacity:1}
-.trending-rank-item .tr-num{min-width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text);background:rgba(0,0,0,.05);flex-shrink:0}
-.trending-rank-item:nth-child(1) .tr-num{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#fff;box-shadow:0 2px 8px rgba(255,215,0,.3)}
-.trending-rank-item:nth-child(2) .tr-num{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#fff;box-shadow:0 2px 8px rgba(192,192,192,.3)}
-.trending-rank-item:nth-child(3) .tr-num{background:linear-gradient(135deg,#cd7f32,#b8690e);color:#fff;box-shadow:0 2px 8px rgba(205,127,50,.3)}
-.trending-rank-item .tr-name{font-size:14px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.trending-rank-item .tr-meta{font-size:11px;color:var(--sub);white-space:nowrap;flex-shrink:0}
-.trending-rank-item .tr-heat{font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:2px}
-.live-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--accent);background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:2px 10px;margin-left:8px;vertical-align:middle}
-.live-dot{width:6px;height:6px;border-radius:50%;background:#ff6b6b;animation:liveBlink 1.2s infinite}
-@keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.3}}
-.trending-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:var(--sub);font-size:14px}
-.trending-loading .spin{margin:0}
-.trending-refresh{font-size:12px;color:var(--accent);cursor:pointer;padding:4px 12px;border-radius:12px;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.15);transition:.2s;margin-left:8px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
-.trending-refresh:hover{background:rgba(255,107,107,.15);border-color:var(--accent)}
-.new-tag{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:linear-gradient(135deg,#ff6b6b,#ff4444);border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle}
+/* === PLATFORM POSTER GRID (Homepage Discovery) === */
+.platform-section{margin-bottom:36px;animation:fadeUp .5s ease both}
+.platform-section:last-child{margin-bottom:0}
+.platform-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid transparent;border-image:var(--accent-g) 1;position:relative}
+.platform-logo{height:32px;padding:4px 14px;border-radius:8px;font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:.5px;flex-shrink:0}
+.platform-logo.plat-douban{background:linear-gradient(135deg,#2dc84d,#20a03c)}
+.platform-logo.plat-qq{background:linear-gradient(135deg,#ff6a13,#ff8f40)}
+.platform-logo.plat-iqiyi{background:linear-gradient(135deg,#00be07,#1db924)}
+.platform-logo.plat-youku{background:linear-gradient(135deg,#1ebdf5,#0099cc)}
+.platform-logo.plat-mgtv{background:linear-gradient(135deg,#ff5f1e,#ff3c00)}
+.platform-logo.plat-baidu{background:linear-gradient(135deg,#306cf5,#2654c0)}
+.platform-logo.plat-weibo{background:linear-gradient(135deg,#ff6b35,#e6162d)}
+.platform-logo.plat-shortdrama{background:linear-gradient(135deg,#ff4081,#f50057)}
+.platform-logo.plat-default{background:var(--accent-g)}
+.platform-count{font-size:12px;color:var(--sub);font-weight:400;margin-left:4px}
+.platform-more{margin-left:auto;font-size:13px;color:var(--accent);cursor:pointer;padding:5px 14px;border-radius:8px;border:1px solid rgba(255,107,107,.2);transition:all .25s;font-weight:500;white-space:nowrap}
+.platform-more:hover{background:rgba(255,107,107,.1);border-color:var(--accent);transform:translateX(2px)}
+@media(max-width:768px){
+  .platform-logo{height:28px;font-size:13px;padding:3px 10px}
+}
 </style>
 </head>
 <body>
@@ -472,7 +447,7 @@ img{max-width:100%}
 
 <!-- HERO SEARCH (homepage only) -->
 <div class="hero" id="heroSection">
-  <h1 class="hero-title">发现好片</h1>
+  <h1 class="hero-title"></h1>
   <p class="hero-subtitle"></p>
   <div class="suggest-wrap">
     <div class="hero-search">
@@ -531,9 +506,8 @@ img{max-width:100%}
 </footer>
 
 <script>
-// === 强制清除旧缓存，彻底解决“只有3页”的顽疾 ===
-localStorage.removeItem('wyh_live_trending_simple');
-localStorage.removeItem('wyh_live_trending_full');
+// === 缓存策略：保留30分钟有效缓存，不再每次强制清除 ===
+// 如需手动清除缓存，可在控制台执行: localStorage.removeItem('wyh_live_trending_full')
 
 // === ANTI-POPUP PROTECTION ===
 (function(){
@@ -766,9 +740,10 @@ const PLAYERS = [
   { name:'线路六', url:'https://json.fongmi.cc/web?url=' },
   { name:'线路七', url:'https://bfq.937auth.vip?url=' },
 ];
-const CATS = ['首页','电视剧','电影','综艺','动漫','短剧','排行榜'];
+const CATS = ['首页'];
 const HOT_WORDS = [];
 let curCat = 0, curPlayer = 0;
+var _searchFromPage = null;
 const DEFAULT_API_SOURCES = [...API_SOURCES];
 const DEFAULT_PLAYERS = [...PLAYERS];
 
@@ -823,16 +798,15 @@ function jpFetch(url, timeout) {
 }
 
 const CORS_PROXIES = [
+  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
   u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
 ];
 async function proxyFetch(url) {
-  const controller = new AbortController();
   const results = await Promise.any(CORS_PROXIES.map(async (px) => {
     try {
-      const r = await fetch(px(url), {signal: AbortSignal.timeout(4000)});
-      if (r.ok) { const d = await r.json(); controller.abort(); return d; }
+      const r = await fetch(px(url), {signal: AbortSignal.timeout(5000)});
+      if (r.ok) { const d = await r.json(); return d; }
     } catch(e) {}
     throw new Error('fail');
   })).catch(() => null);
@@ -841,14 +815,17 @@ async function proxyFetch(url) {
 
 async function apiFetch(url) {
   // Run all fetch strategies in parallel — return the first success.
-  // Fixes first-search failure: previously JSONP had to timeout (4s) before proxy was tried.
   try {
     const result = await Promise.any([
-      jpFetch(url, 5000),
+      jpFetch(url, 6000),
       proxyFetch(url).then(d => { if (!d) throw new Error('empty'); return d; }),
-      fetch(url, { signal: AbortSignal.timeout(6000) })
+      fetch(url, { signal: AbortSignal.timeout(8000), mode: 'cors' })
         .then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
-        .catch(() => { throw new Error('direct fail'); })
+        .catch(() => { throw new Error('direct fail'); }),
+      // no-cors fetch as last resort (can't read response but confirms connectivity)
+      fetch(url, { signal: AbortSignal.timeout(8000), mode: 'no-cors' })
+        .then(() => { throw new Error('no-cors no-read'); })
+        .catch(() => { throw new Error('no-cors fail'); })
     ]);
     if (result) return result;
   } catch(e) {}
@@ -1198,12 +1175,7 @@ async function apiLoadCatFull(catName) {
   function typeMatches(itemType, cat) {
     if (!itemType || itemType === '') return true; // unknown type, allow
     const t = itemType.toLowerCase();
-    const catAliases = {
-      '电影': ['电影','电影片','动作片','喜剧片','爱情片','科幻片','恐怖片','剧情片','战争片','纪录片','犯罪片','悬疑片','惊悚片','冒险片','奇幻片','动画电影','伦理片','历史片','传记片','西部片','灾难片','武侠片','古装片','家庭片','歌舞片','运动片','短片','真人秀电影','音乐片','黑色电影'],
-      '电视剧': ['电视剧','连续剧','国产剧','港台剧','日韩剧','欧美剧','泰国剧','海外剧','韩剧','日剧','美剧','英剧','台剧','港剧','大陆剧','内地剧'],
-      '综艺': ['综艺','综艺片','综艺节目','真人秀','脱口秀','选秀','音乐节目','访谈'],
-      '动漫': ['动漫','动漫片','动画','动画片','动漫电影','新番','国漫','日漫','番剧','OVA','剧场版'],
-    };
+    
     const aliases = catAliases[cat] || [cat];
     return aliases.some(a => t.includes(a) || a.includes(t));
   }
@@ -1295,78 +1267,6 @@ async function apiLoadCatFull(catName) {
   return allItems;
 }
 
-async function apiLoadCat(catName) {
-  const typeMap = {'电影':'1','电视剧':'2','动漫':'4','综艺':'3'};
-  const tid = typeMap[catName]||'';
-  const isShortDrama = (catName === '短剧');
-  const allItems = [];
-  const seen = new Set();
-
-  if (isShortDrama) {
-    const allSrc = [...API_SOURCES.slice(0,4), ...SHORT_DRAMA_SOURCES];
-    const results = await Promise.all(allSrc.map(async (src) => {
-      try {
-        const url = src.api + '?ac=detail&wd=' + encodeURIComponent('短剧') + '&pg=1';
-        const data = await apiFetch(url);
-        if (data && data.list) return data.list.map(item => mapVodItem(item, src.name));
-      } catch(e) {}
-      return [];
-    }));
-    for (const batch of results) {
-      for (const item of batch) {
-        if (!item.name || seen.has(item.name)) continue;
-        seen.add(item.name);
-        allItems.push(item);
-      }
-    }
-    return allItems;
-  }
-  const results = await Promise.all(API_SOURCES.slice(0,8).map(async (src) => {
-    // Try ac=detail first (returns images + playUrl)
-    try {
-      const url = src.api + '?ac=detail' + (tid?'&t='+tid:'') + '&pg=1';
-      const data = await apiFetch(url);
-      if (data && data.list && data.list.length > 0) return data.list.map(item => mapVodItem(item, src.name));
-    } catch(e) {}
-    // Fallback: ac=detail without type filter
-    try {
-      const url = src.api + '?ac=detail&pg=1';
-      const data = await apiFetch(url);
-      if (data && data.list) return data.list.map(item => mapVodItem(item, src.name));
-    } catch(e) {}
-    // Fallback: ac=list
-    try {
-      const url = src.api + '?ac=list' + (tid?'&t='+tid:'') + '&pg=1';
-      const data = await apiFetch(url);
-      if (data && data.list) return data.list.map(item => mapListItem(item, src.name));
-    } catch(e) {}
-    return [];
-  }));
-  // Helper: flexible type matching for homepage
-  function homeTypeMatch(itemType, cat) {
-    if (!itemType || itemType === '') return true;
-    const t = itemType.toLowerCase();
-    const aliases = {
-      '电影': ['电影','动作片','喜剧片','爱情片','科幻片','恐怖片','剧情片','战争片','纪录片','犯罪片','悬疑片','惊悚片','冒险片','奇幻片'],
-      '电视剧': ['电视剧','连续剧','国产剧','港台剧','日韩剧','欧美剧','泰国剧','海外剧','韩剧','日剧','美剧'],
-      '综艺': ['综艺','综艺片','综艺节目','真人秀'],
-      '动漫': ['动漫','动漫片','动画','动画片','新番','国漫','日漫','番剧'],
-    };
-    const arr = aliases[cat] || [cat];
-    return arr.some(a => t.includes(a) || a.includes(t));
-  }
-  for (const batch of results) {
-    for (const item of batch) {
-      if (!item.name) continue;
-      if (!homeTypeMatch(item.type, catName)) continue;
-      if (!seen.has(item.name)) {
-        seen.add(item.name);
-        allItems.push(item);
-      }
-    }
-  }
-  return allItems;
-}
 
 // === RENDER FUNCTIONS ===
 function proxyImg(url) {
@@ -1398,7 +1298,7 @@ function cardHTML(item, idx, eager) {
 }
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-const SECTION_ICONS = {'电视剧':'&#127909;','电影':'&#127916;','综艺':'&#127908;','动漫':'&#127912;','短剧':'&#9889;','排行榜':'&#127942;'};
+const SECTION_ICONS = {'电视剧':'&#127909;','电影':'&#127916;','综艺':'&#127908;','动漫':'&#127912;','短剧':'&#9889;'};
 
 function sectionHTML(title, items, eager) {
   if (!items||!items.length) return '';
@@ -1455,712 +1355,12 @@ function srItemHTML(item) {
     + '</div></div>';
 }
 
-// === CURATED HOT CONTENT ===
-const CURATED_HOT = {
-'电视剧': [
-  // === 古装 ===
-  {name:'白日提灯',class:'古装,悬疑,爱情',area:'大陆',year:'2026'},
-  {name:'侦宋',class:'古装,悬疑,爱情',area:'大陆',year:'2026'},
-  {name:'一念梦离',class:'古装,宫斗,爱情',area:'大陆',year:'2026'},
-  {name:'月鳞绮纪',class:'古装,玄幻,爱情',area:'大陆',year:'2026'},
-  {name:'方圆八百米',class:'现代,悬疑,爱情',area:'大陆',year:'2026'},
-  {name:'蜜语纪',class:'现代,虐心,爱情',area:'大陆',year:'2026'},
-  {name:'八千里路云和月',class:'现代,权谋,爱情',area:'大陆',year:'2026'},
-  {name:'金关',class:'现代,悬疑,爱情',area:'大陆',year:'2026'},
-  {name:'冰湖重生',class:'古装,权谋,爱情',area:'大陆',year:'2026'},
-  {name:'凡人修仙传',class:'修仙,神话,小说',area:'大陆',year:'2025'},
-  {name:'周生如故',class:'古装,权谋,爱情',area:'大陆',year:'2021'},
-  {name:'玉茗茶骨',class:'古装,权谋,爱情',area:'大陆',year:'2026'},
-  {name:'琅琊榜',class:'古装,权谋,剧情',area:'大陆',year:'2015'},
-  {name:'成何体统',class:'古装,爱情,穿越',area:'大陆',year:'2026'},
-  {name:'庆余年',class:'古装,权谋,喜剧',area:'大陆',year:'2023'},
-  {name:'庆余年第二季',class:'古装,权谋,喜剧',area:'大陆',year:'2024'},
-  {name:'庆余年第三季',class:'古装,权谋,喜剧',area:'大陆',year:'2025'},
-  {name:'长安的荔枝',class:'古装,爱情,奇幻',area:'大陆',year:'2023'},
-  {name:'永夜星河',class:'古装,爱情,奇幻',area:'大陆',year:'2024'},
-  {name:'与凤行',class:'古装,爱情,奇幻',area:'大陆',year:'2024'},
-  {name:'佳偶天成',class:'古装,奇幻,爱情',area:'大陆',year:'2026'},
-  {name:'花间令',class:'古装,悬疑,爱情',area:'大陆',year:'2024'},
-  {name:'颜心记',class:'古装,爱情,喜剧',area:'大陆',year:'2024'},
-  {name:'长月烬明',class:'古装,爱情,奇幻',area:'大陆',year:'2023'},
-  {name:'唐宫奇案之青雾风鸣',class:'古装,爱情,争斗',area:'大陆',year:'2026'},
-  {name:'星汉灿烂',class:'古装,爱情,历史',area:'大陆',year:'2022'},
-  {name:'梦华录',class:'古装,爱情,剧情',area:'大陆',year:'2022'},
-  {name:'一念关山',class:'古装,武侠,爱情',area:'大陆',year:'2023'},
-  {name:'云之羽',class:'古装,爱情,武侠',area:'大陆',year:'2023'},
-  {name:'护心',class:'古装,爱情,奇幻',area:'大陆',year:'2023'},
-  {name:'玉骨遥',class:'古装,爱情,奇幻',area:'大陆',year:'2023'},
-  {name:'长风渡',class:'古装,爱情,喜剧',area:'大陆',year:'2023'},
-  {name:'花戎',class:'古装,爱情,奇幻',area:'大陆',year:'2023'},
-  {name:'安乐传',class:'古装,权谋,爱情',area:'大陆',year:'2023'},
-  {name:'逐玉',class:'古装,爱情,权谋',area:'大陆',year:'2026'},
-  {name:'雪中悍刀行',class:'古装,武侠,权谋',area:'大陆',year:'2021'},
-  {name:'唐朝诡事录',class:'古装,悬疑,奇幻',area:'大陆',year:'2022'},
-  {name:'少年歌行',class:'古装,武侠,冒险',area:'大陆',year:'2022'},
-  {name:'度华年',class:'古装,爱情,穿越',area:'大陆',year:'2024'},
-  {name:'春花焰',class:'古装,爱情,复仇',area:'大陆',year:'2024'},
-  {name:'紫川',class:'古装,奇幻,冒险',area:'大陆',year:'2024'},
-  {name:'与君初相识',class:'古装,爱情,奇幻',area:'大陆',year:'2022'},
-].map(function(o){return {name:o.name,type:'电视剧',class:o.class||'',area:o.area||'',year:o.year||'',remarks:'热播中',pic:'',actor:''}}),
-'电影': [
-  // === 动作 ===
-  {name:'封神第一部',class:'动作,古装,奇幻',area:'大陆',year:'2023'},
-  {name:'封神第二部',class:'动作,古装,奇幻',area:'大陆',year:'2025'},
-  {name:'满江红',class:'动作,古装,悬疑',area:'大陆',year:'2023'},
-  {name:'怒火重案',class:'动作,犯罪,剧情',area:'香港',year:'2021'},
-  {name:'拆弹专家2',class:'动作,犯罪,悬疑',area:'香港',year:'2020'},
-  {name:'除暴',class:'动作,犯罪,剧情',area:'大陆',year:'2020'},
-  {name:'疾速追杀4',class:'动作,犯罪,惊悚',area:'美国',year:'2023'},
-  {name:'碟中谍7',class:'动作,冒险,惊悚',area:'美国',year:'2023'},
-  {name:'死侍与金刚狼',class:'动作,喜剧,科幻',area:'美国',year:'2024'},
-  {name:'明日战记',class:'动作,科幻,冒险',area:'香港',year:'2022'},
-  {name:'金手指',class:'动作,犯罪,剧情',area:'香港',year:'2023'},
-  {name:'潜行',class:'动作,犯罪,悬疑',area:'香港',year:'2023'},
-  {name:'断网',class:'动作,犯罪,悬疑',area:'香港',year:'2023'},
-  {name:'恶战',class:'动作,犯罪,剧情',area:'大陆',year:'2025'},
-  {name:'最后一枪',class:'动作,犯罪,悬疑',area:'大陆',year:'2025'},
-  // === 喜剧 ===
-  {name:'热辣滚烫',class:'喜剧,剧情,运动',area:'大陆',year:'2024'},
-  {name:'飞驰人生2',class:'喜剧,运动,剧情',area:'大陆',year:'2024'},
-  {name:'第二十条',class:'喜剧,剧情,家庭',area:'大陆',year:'2024'},
-  {name:'年会不能停',class:'喜剧,剧情,都市',area:'大陆',year:'2024'},
-  {name:'人生路不熟',class:'喜剧,剧情,冒险',area:'大陆',year:'2023'},
-  {name:'抓娃娃',class:'喜剧,剧情,家庭',area:'大陆',year:'2024'},
-  {name:'好东西',class:'喜剧,爱情,都市',area:'大陆',year:'2024'},
-  {name:'阿爸请你嘛嘛吼',class:'喜剧,家庭,剧情',area:'台湾',year:'2025'},
-  {name:'非传统浪漫关系',class:'喜剧,爱情,都市',area:'大陆',year:'2025'},
-  // === 爱情 ===
-  {name:'一闪一闪亮星星',class:'爱情,科幻,剧情',area:'大陆',year:'2024'},
-  {name:'想见你',class:'爱情,悬疑,穿越',area:'台湾',year:'2019'},
-  {name:'泰坦尼克号',class:'爱情,灾难,剧情',area:'美国',year:'1997'},
-  {name:'触不可及',class:'爱情,剧情,温情',area:'法国',year:'2011'},
-  // === 科幻 ===
-  {name:'流浪地球2',class:'科幻,冒险,灾难',area:'大陆',year:'2023'},
-  {name:'盗梦空间',class:'科幻,悬疑,动作',area:'美国',year:'2010'},
-  {name:'星际穿越',class:'科幻,冒险,剧情',area:'美国',year:'2014'},
-  {name:'信条',class:'科幻,动作,悬疑',area:'美国',year:'2020'},
-  {name:'沙丘',class:'科幻,冒险,剧情',area:'美国',year:'2021'},
-  {name:'沙丘2',class:'科幻,冒险,动作',area:'美国',year:'2024'},
-  {name:'奥本海默',class:'科幻,历史,剧情',area:'美国',year:'2023'},
-  {name:'从21世纪安全撤离',class:'科幻,喜剧,冒险',area:'大陆',year:'2024'},
-  {name:'隔壁的外星人',class:'科幻,喜剧,奇幻',area:'大陆',year:'2025'},
-  // === 悬疑/犯罪 ===
-  {name:'消失的她',class:'悬疑,犯罪,剧情',area:'大陆',year:'2023'},
-  {name:'孤注一掷',class:'犯罪,悬疑,剧情',area:'大陆',year:'2023'},
-  {name:'坚如磐石',class:'犯罪,悬疑,剧情',area:'大陆',year:'2023'},
-].map(function(o){return {name:o.name,type:'电影',class:o.class||'',area:o.area||'',year:o.year||'',remarks:'正片',pic:'',actor:''}}),
-'综艺': [
-  // === 真人秀 ===
-  {name:'奔跑吧',class:'真人秀,搞笑,竞技',area:'大陆',year:'2024'},
-  {name:'极限挑战',class:'真人秀,搞笑,冒险',area:'大陆',year:'2024'},
-  {name:'向往的生活',class:'真人秀,美食,旅行',area:'大陆',year:'2023'},
-  {name:'花儿与少年',class:'真人秀,旅行,情感',area:'大陆',year:'2024'},
-  {name:'五十公里桃花坞',class:'真人秀,情感,社交',area:'大陆',year:'2024'},
-  {name:'密室大逃脱',class:'真人秀,竞技,悬疑',area:'大陆',year:'2024'},
-  {name:'中餐厅',class:'真人秀,美食,旅行',area:'大陆',year:'2023'},
-  {name:'王牌对王牌',class:'真人秀,搞笑,竞技',area:'大陆',year:'2024'},
-  {name:'快乐再出发',class:'真人秀,搞笑,旅行',area:'大陆',year:'2023'},
-  {name:'再见爱人',class:'真人秀,情感,访谈',area:'大陆',year:'2024'},
-  {name:'种地吧',class:'真人秀,劳动,治愈',area:'大陆',year:'2024'},
-  {name:'花少好友记',class:'真人秀,旅行,搞笑',area:'大陆',year:'2024'},
-  {name:'灿烂的花园',class:'真人秀,治愈,美食',area:'大陆',year:'2024'},
-  {name:'哈哈哈哈哈第六季',class:'真人秀,搞笑,旅行',area:'大陆',year:'2026'},
-  {name:'乘风2026',class:'真人秀,音乐,竞技',area:'大陆',year:'2026'},
-  {name:'妻子的浪漫旅行2026',class:'真人秀,旅行,情感',area:'大陆',year:'2026'},
-  {name:'我们的爸爸第二季',class:'真人秀,家庭,情感',area:'大陆',year:'2026'},
-  {name:'亲爱的客栈2026',class:'真人秀,旅行,情感',area:'大陆',year:'2026'},
-  {name:'怦然心动20岁',class:'真人秀,情感,青春',area:'大陆',year:'2025'},
-  {name:'大侦探第十一季',class:'真人秀,悬疑,搞笑',area:'大陆',year:'2026'},
-  {name:'大侦探第十季',class:'真人秀,悬疑,搞笑',area:'大陆',year:'2025'},
-  {name:'我家那闺女',class:'真人秀,情感,家庭',area:'大陆',year:'2024'},
-  {name:'爸爸当家',class:'真人秀,家庭,情感',area:'大陆',year:'2024'},
-  {name:'做家务的男人',class:'真人秀,家庭,搞笑',area:'大陆',year:'2024'},
-  // === 脱口秀 ===
-  {name:'脱口秀大会',class:'脱口秀,搞笑,竞技',area:'大陆',year:'2024'},
-  {name:'吐槽大会',class:'脱口秀,搞笑,访谈',area:'大陆',year:'2024'},
-  {name:'脱口秀和Ta的朋友们',class:'脱口秀,搞笑,情感',area:'大陆',year:'2024'},
-  {name:'喜剧大会',class:'脱口秀,搞笑,竞技',area:'大陆',year:'2024'},
-  {name:'一年一度喜剧大赛',class:'脱口秀,搞笑,竞技',area:'大陆',year:'2023'},
-  {name:'奇葩说',class:'脱口秀,访谈,辩论',area:'大陆',year:'2023'},
-  // === 选秀/音乐 ===
-  {name:'披荆斩棘',class:'音乐,竞技,真人秀',area:'大陆',year:'2024'},
-  {name:'声生不息',class:'音乐,竞技,真人秀',area:'大陆',year:'2024'},
-  {name:'我是歌手',class:'音乐,竞技,真人秀',area:'大陆',year:'2024'},
-  {name:'天赐的声音',class:'音乐,竞技,真人秀',area:'大陆',year:'2023'},
-  {name:'我们的歌',class:'音乐,竞技,真人秀',area:'大陆',year:'2023'},
-  {name:'魔力歌先生',class:'音乐,搞笑,真人秀',area:'大陆',year:'2025'},
-  {name:'声起地平线',class:'音乐,竞技,真人秀',area:'大陆',year:'2025'},
-  // === 情感/访谈 ===
-  {name:'心动的信号',class:'情感,真人秀,恋爱',area:'大陆',year:'2024'},
-  {name:'半熟恋人',class:'情感,真人秀,恋爱',area:'大陆',year:'2023'},
-  {name:'令人心动的offer',class:'真人秀,职场,情感',area:'大陆',year:'2023'},
-].map(function(o){return {name:o.name,type:'综艺',class:o.class||'',area:o.area||'',year:o.year||'',remarks:'更新中',pic:'',actor:''}}),
-'动漫': [
-  // === 热血 ===
-  {name:'完美世界',class:'热血,玄幻,冒险',area:'大陆',year:'2021'},
-  {name:'斗破苍穹',class:'热血,玄幻,冒险',area:'大陆',year:'2018'},
-  {name:'吞噬星空',class:'热血,科幻,冒险',area:'大陆',year:'2020'},
-  {name:'武动乾坤',class:'热血,玄幻,冒险',area:'大陆',year:'2019'},
-  {name:'遮天',class:'热血,玄幻,冒险',area:'大陆',year:'2023'},
-  {name:'仙逆',class:'热血,修仙,冒险',area:'大陆',year:'2023'},
-  {name:'凡人修仙传',class:'热血,修仙,冒险',area:'大陆',year:'2020'},
-  {name:'一念永恒',class:'热血,修仙,冒险',area:'大陆',year:'2020'},
-  {name:'万界独尊',class:'热血,玄幻,冒险',area:'大陆',year:'2019'},
-  {name:'帝霸',class:'热血,玄幻,冒险',area:'大陆',year:'2022'},
-  {name:'沧元图',class:'热血,玄幻,冒险',area:'大陆',year:'2022'},
-  {name:'永生',class:'热血,修仙,冒险',area:'大陆',year:'2022'},
-  {name:'万古神帝',class:'热血,玄幻,冒险',area:'大陆',year:'2022'},
-  {name:'独步逍遥',class:'热血,玄幻,冒险',area:'大陆',year:'2020'},
-  {name:'绝世武魂',class:'热血,玄幻,冒险',area:'大陆',year:'2020'},
-  {name:'灵剑尊',class:'热血,玄幻,修仙',area:'大陆',year:'2019'},
-  {name:'斗罗大陆5重生唐三',class:'热血,玄幻,冒险',area:'大陆',year:'2024'},
-  {name:'逆天邪神',class:'热血,玄幻,冒险',area:'大陆',year:'2024'},
-  {name:'剑来第二季',class:'热血,修仙,冒险',area:'大陆',year:'2024'},
-  {name:'神印王座',class:'热血,奇幻,冒险',area:'大陆',year:'2022'},
-  {name:'仙武帝尊',class:'热血,修仙,冒险',area:'大陆',year:'2021'},
-  {name:'全民御兽',class:'热血,奇幻,冒险',area:'大陆',year:'2024'},
-  {name:'神墓',class:'热血,玄幻,冒险',area:'大陆',year:'2023'},
-  {name:'万相之王',class:'热血,玄幻,冒险',area:'大陆',year:'2024'},
-  {name:'九天玄帝诀',class:'热血,玄幻,修仙',area:'大陆',year:'2021'},
-  {name:'太初',class:'热血,修仙,冒险',area:'大陆',year:'2021'},
-  {name:'武神主宰',class:'热血,玄幻,冒险',area:'大陆',year:'2020'},
-  {name:'全职法师',class:'热血,奇幻,冒险',area:'大陆',year:'2016'},
-  // === 玄幻/修仙 ===
-  {name:'师兄啊师兄',class:'修仙,搞笑,冒险',area:'大陆',year:'2022'},
-  {name:'星辰变',class:'修仙,冒险,热血',area:'大陆',year:'2018'},
-  {name:'丹道至尊',class:'修仙,冒险,热血',area:'大陆',year:'2024'},
-  {name:'盗妖行',class:'玄幻,冒险,搞笑',area:'大陆',year:'2024'},
-  {name:'驭灵师',class:'玄幻,冒险,热血',area:'大陆',year:'2024'},
-  {name:'将夜',class:'玄幻,冒险,热血',area:'大陆',year:'2018'},
-  {name:'修仙者大战超能力',class:'修仙,搞笑,冒险',area:'大陆',year:'2024'},
-  {name:'独尊',class:'玄幻,修仙,冒险',area:'大陆',year:'2024'},
-  // === 恋爱 ===
-  {name:'偷偷藏不住动态漫画',class:'恋爱,校园,甜宠',area:'大陆',year:'2024'},
-  {name:'嚣张狂妃',class:'恋爱,古装,穿越',area:'大陆',year:'2023'},
-  {name:'暖婚100分',class:'恋爱,都市,甜宠',area:'大陆',year:'2023'},
-  {name:'萌宝来袭',class:'恋爱,都市,搞笑',area:'大陆',year:'2023'},
-].map(function(o){return {name:o.name,type:'动漫',class:o.class||'',area:o.area||'',year:o.year||'',remarks:'更新中',pic:'',actor:''}}),
-'短剧': [
-  '学霸重生之我竟然是假千金','错位亲情真少爷的绝地反击','妙手邪医','矿场透视王',
-  '背叛之下她清算一切','老公和我AA制','巷陌暖阳','嫡女是废柴老祖不好惹',
-  '葬礼上我撕下了妹妹的假面','我救大佬出监狱','被举报后我断了全小区水电',
-  '前妻不知道的事','透视神医混花都','她藏起了倾城貌',
-  '失恋后发现好兄弟是清冷校花','虎妈重生带三个女儿涅槃','错付十年温情后我重燃人生',
-  '真龙传承我为都市最强','重生回家第一天她清算一切','潜龙护卫','相亲走错桌',
-  '重生把妻女宠上天','宗门真千金她言出法随','三年卧床起身即医仙',
-  '系统让我当大明星','都市长生三万年','逍遥小县令',
-  '拿到洗衣液我妈离婚了','乱世荒年我靠军火库裂土封王','开局统兵80万马踏皇城',
-  '九零小作精随母改嫁被糙汉甜宠','离婚计划失败中','鬼界高能前方玄学小祖宗下山了',
-  '她养的纨绔丈夫超乖','带校花回家后全村大佬藏不住了','女总裁的无敌小助理',
-  '90年代这家媳妇有点辣','育儿嫂入公府成白月光','秦机长太太是真的想离婚了',
-  '前夫的秘密我知道'
-].map(n => ({name:n,type:'短剧',remarks:'全集',pic:'',actor:'',class:'',area:'',year:''})),
-};
 
-// === RANKING DATA (text-only for instant loading) ===
-const RANK_TABS = ['电视剧排行榜','电影排行榜','动漫排行榜','综艺排行榜','短剧排行榜'];
-let curRankTab = 0;
-let _searchFromPage = null; // 记录搜索前所在页面: null=首页, 'rank'=排行榜, 'cat'=分类页
-
-const RANKING_DATA = {
-'电视剧排行榜': [
-  {name:'白日提灯',heat:99823,meta:'古装·悬疑'},
-  {name:'侦宋',heat:96540,meta:'古装·悬疑'},
-  {name:'一念梦离',heat:93217,meta:'古装·宫斗'},
-  {name:'长生诀',heat:90108,meta:'古装·武侠'},
-  {name:'百灵潭',heat:87652,meta:'古装·奇幻'},
-  {name:'人生路遥',heat:85431,meta:'都市·剧情'},
-  {name:'我的阿勒泰',heat:83290,meta:'文艺·剧情'},
-  {name:'欢乐颂5',heat:81543,meta:'都市·情感'},
-  {name:'庆余年3',heat:79812,meta:'古装·权谋'},
-  {name:'玫瑰的故事',heat:78102,meta:'都市·情感'},
-  {name:'墨雨云间',heat:76543,meta:'古装·复仇'},
-  {name:'长相思2',heat:74231,meta:'古装·仙侠'},
-  {name:'与凤行',heat:72890,meta:'仙侠·爱情'},
-  {name:'繁花',heat:71205,meta:'年代·商战'},
-  {name:'孤舟',heat:69876,meta:'谍战·悬疑'},
-  {name:'唐朝诡事录之西行',heat:68321,meta:'古装·悬疑'},
-  {name:'边水往事',heat:66752,meta:'犯罪·冒险'},
-  {name:'日光之城',heat:65108,meta:'都市·剧情'},
-  {name:'春色寄情人',heat:63254,meta:'都市·爱情'},
-  {name:'度华年',heat:61890,meta:'古装·穿越'},
-  {name:'承欢记',heat:60321,meta:'都市·家庭'},
-  {name:'颜心记',heat:58765,meta:'古装·喜剧'},
-  {name:'追风者',heat:57210,meta:'年代·谍战'},
-  {name:'城中之城',heat:55643,meta:'都市·金融'},
-  {name:'惜花芷',heat:54102,meta:'古装·宅斗'},
-  {name:'紫川',heat:52876,meta:'古装·玄幻'},
-  {name:'猎冰',heat:51234,meta:'犯罪·悬疑'},
-  {name:'大唐狄公案',heat:49801,meta:'古装·探案'},
-  {name:'南来北往',heat:48123,meta:'年代·剧情'},
-  {name:'在暴雪时分',heat:46567,meta:'都市·爱情'},
-  {name:'烟火人家',heat:45012,meta:'都市·家庭'},
-  {name:'大江大河3',heat:43567,meta:'年代·创业'},
-  {name:'以爱为营',heat:42108,meta:'都市·爱情'},
-  {name:'莲花楼',heat:40876,meta:'古装·探案'},
-  {name:'长风渡',heat:39543,meta:'古装·爱情'},
-  {name:'偷偷藏不住',heat:38210,meta:'青春·爱情'},
-  {name:'我的人间烟火',heat:36987,meta:'都市·爱情'},
-  {name:'七时吉祥',heat:35654,meta:'仙侠·爱情'},
-  {name:'安乐传',heat:34321,meta:'古装·权谋'},
-  {name:'狂飙',heat:33102,meta:'犯罪·扫黑'},
-  {name:'三体',heat:31876,meta:'科幻·剧情'},
-  {name:'去有风的地方',heat:30654,meta:'田园·爱情'},
-  {name:'人世间',heat:29432,meta:'年代·家庭'},
-  {name:'开端',heat:28210,meta:'悬疑·科幻'},
-  {name:'苍兰诀',heat:27102,meta:'仙侠·爱情'},
-  {name:'星汉灿烂',heat:25987,meta:'古装·爱情'},
-  {name:'梦华录',heat:24876,meta:'古装·爱情'},
-  {name:'风吹半夏',heat:23654,meta:'年代·商战'},
-  {name:'县委大院',heat:22432,meta:'现实·主旋律'},
-  {name:'少年派2',heat:21321,meta:'青春·校园'},
-  {name:'警察荣誉2',heat:20210,meta:'都市·刑侦'},
-  {name:'风起洛阳',heat:19102,meta:'古装·悬疑'},
-  {name:'雪中悍刀行',heat:18012,meta:'武侠·玄幻'},
-  {name:'赘婿',heat:16987,meta:'古装·喜剧'},
-  {name:'山河令',heat:15876,meta:'武侠·冒险'},
-  {name:'御赐小仵作',heat:14765,meta:'古装·探案'},
-  {name:'觉醒年代',heat:13654,meta:'历史·革命'},
-  {name:'你是我的荣耀',heat:12543,meta:'都市·爱情'},
-  {name:'司藤',heat:11432,meta:'奇幻·爱情'},
-  {name:'隐秘的角落',heat:10321,meta:'悬疑·犯罪'},
-  {name:'沉默的真相',heat:9987,meta:'悬疑·法律'},
-  {name:'装腔启示录',heat:9654,meta:'都市·爱情'},
-  {name:'鬼吹灯之昆仑神宫',heat:9321,meta:'探险·悬疑'},
-  {name:'风起陇西',heat:8987,meta:'古装·谍战'},
-  {name:'卿卿日常',heat:8654,meta:'古装·喜剧'},
-  {name:'天才基本法',heat:8321,meta:'科幻·青春'},
-  {name:'二十不惑2',heat:7987,meta:'青春·成长'},
-  {name:'异人之下',heat:7654,meta:'玄幻·动作'},
-  {name:'爱情而已',heat:7321,meta:'都市·爱情'},
-  {name:'云襄传',heat:6987,meta:'古装·武侠'},
-  {name:'长月烬明',heat:6654,meta:'仙侠·爱情'},
-  {name:'护心',heat:6321,meta:'仙侠·喜剧'},
-  {name:'暮色心约',heat:5987,meta:'悬疑·爱情'},
-  {name:'花间令',heat:5654,meta:'古装·悬疑'},
-  {name:'大宋少年志2',heat:5321,meta:'古装·热血'},
-  {name:'九义人',heat:4987,meta:'古装·武侠'},
-  {name:'灿烂的转身',heat:4654,meta:'都市·情感'},
-  {name:'半熟男女',heat:4321,meta:'都市·爱情'},
-  {name:'问心',heat:3987,meta:'都市·医疗'},
-  {name:'田耕纪',heat:3654,meta:'古装·种田'},
-  {name:'后浪',heat:3321,meta:'都市·中医'},
-  {name:'烈焰',heat:2987,meta:'玄幻·冒险'},
-  {name:'大奉打更人',heat:2654,meta:'古装·探案'},
-  {name:'蜀锦人家',heat:2321,meta:'古装·商战'},
-  {name:'永夜星河',heat:1987,meta:'仙侠·爱情'},
-  {name:'白夜破晓',heat:1654,meta:'悬疑·刑侦'},
-  {name:'九重紫',heat:1321,meta:'古装·宅斗'},
-  {name:'难哄',heat:1102,meta:'都市·爱情'},
-  {name:'小巷人家',heat:987,meta:'年代·家庭'},
-  {name:'玉骨遥',heat:876,meta:'仙侠·爱情'},
-],
-'电影排行榜': [
-  {name:'哪吒之魔童闹海',heat:99102,meta:'动画·奇幻'},
-  {name:'唐探1900',heat:96543,meta:'喜剧·悬疑'},
-  {name:'射雕英雄传：侠之大者',heat:93876,meta:'武侠·动作'},
-  {name:'封神第二部',heat:91234,meta:'奇幻·史诗'},
-  {name:'蛟龙行动',heat:88567,meta:'动作·战争'},
-  {name:'熊出没·重启未来',heat:86102,meta:'动画·冒险'},
-  {name:'人生开门红',heat:83654,meta:'喜剧·剧情'},
-  {name:'抓娃娃',heat:81203,meta:'喜剧·家庭'},
-  {name:'默杀',heat:78876,meta:'悬疑·犯罪'},
-  {name:'好东西',heat:76543,meta:'剧情·文艺'},
-  {name:'志愿军：存亡之战',heat:74210,meta:'战争·历史'},
-  {name:'飞驰人生2',heat:72654,meta:'喜剧·运动'},
-  {name:'第二十条',heat:70987,meta:'剧情·法律'},
-  {name:'热辣滚烫',heat:69321,meta:'喜剧·运动'},
-  {name:'周处除三害',heat:67876,meta:'动作·犯罪'},
-  {name:'异形：夺命舰',heat:65432,meta:'科幻·恐怖'},
-  {name:'沙丘2',heat:63108,meta:'科幻·冒险'},
-  {name:'头脑特工队2',heat:61567,meta:'动画·喜剧'},
-  {name:'死侍与金刚狼',heat:59234,meta:'动作·喜剧'},
-  {name:'解密',heat:57901,meta:'谍战·历史'},
-  {name:'逆行人生',heat:55432,meta:'剧情·现实'},
-  {name:'从21世纪安全撤离',heat:53876,meta:'科幻·喜剧'},
-  {name:'负负得正',heat:52102,meta:'爱情·喜剧'},
-  {name:'只此青绿',heat:50543,meta:'舞蹈·文艺'},
-  {name:'蜘蛛侠：纵横宇宙',heat:48987,meta:'动画·动作'},
-  {name:'消失的她',heat:47321,meta:'悬疑·犯罪'},
-  {name:'孤注一掷',heat:45876,meta:'犯罪·剧情'},
-  {name:'满江红',heat:44210,meta:'古装·悬疑'},
-  {name:'流浪地球2',heat:42567,meta:'科幻·冒险'},
-  {name:'长安三万里',heat:41023,meta:'动画·历史'},
-  {name:'封神第一部',heat:39876,meta:'奇幻·史诗'},
-  {name:'八角笼中',heat:38654,meta:'剧情·格斗'},
-  {name:'坚如磐石',heat:37432,meta:'犯罪·悬疑'},
-  {name:'河边的错误',heat:36210,meta:'文艺·悬疑'},
-  {name:'涉过愤怒的海',heat:35012,meta:'犯罪·悬疑'},
-  {name:'三大队',heat:33876,meta:'犯罪·剧情'},
-  {name:'学爸',heat:32654,meta:'喜剧·教育'},
-  {name:'年会不能停!',heat:31432,meta:'喜剧·职场'},
-  {name:'金手指',heat:30210,meta:'犯罪·传记'},
-  {name:'一闪一闪亮星星',heat:29012,meta:'爱情·科幻'},
-  {name:'奥本海默',heat:27876,meta:'传记·历史'},
-  {name:'芭比',heat:26654,meta:'喜剧·奇幻'},
-  {name:'碟中谍7',heat:25432,meta:'动作·冒险'},
-  {name:'银河护卫队3',heat:24210,meta:'科幻·喜剧'},
-  {name:'速度与激情10',heat:23012,meta:'动作·赛车'},
-  {name:'疯狂元素城',heat:21876,meta:'动画·爱情'},
-  {name:'变形金刚：超能勇士崛起',heat:20654,meta:'科幻·动作'},
-  {name:'忍者神龟：变种大乱斗',heat:19432,meta:'动画·动作'},
-  {name:'功夫熊猫4',heat:18210,meta:'动画·喜剧'},
-  {name:'哥斯拉大战金刚2',heat:17012,meta:'科幻·动作'},
-  {name:'猩球崛起：新世界',heat:15876,meta:'科幻·冒险'},
-  {name:'小丑2',heat:14654,meta:'剧情·音乐'},
-  {name:'惊奇队长2',heat:13432,meta:'科幻·动作'},
-  {name:'拿破仑',heat:12210,meta:'传记·历史'},
-  {name:'五个扑水的少年',heat:11012,meta:'喜剧·运动'},
-  {name:'我爱你！',heat:9876,meta:'爱情·剧情'},
-  {name:'人生大事',heat:8654,meta:'剧情·温情'},
-  {name:'独行月球',heat:7432,meta:'科幻·喜剧'},
-  {name:'万里归途',heat:6321,meta:'剧情·冒险'},
-  {name:'深海',heat:5210,meta:'动画·奇幻'},
-  {name:'无名',heat:4102,meta:'谍战·历史'},
-  {name:'毒舌律师',heat:3012,meta:'剧情·法律'},
-  {name:'铃芽之旅',heat:2108,meta:'动画·奇幻'},
-  {name:'海王2',heat:1543,meta:'科幻·冒险'},
-  {name:'旺卡',heat:1102,meta:'奇幻·喜剧'},
-  {name:'忠犬八公',heat:876,meta:'剧情·动物'},
-  {name:'保你平安',heat:654,meta:'喜剧·剧情'},
-  {name:'望道',heat:432,meta:'历史·传记'},
-  {name:'最好的相遇',heat:321,meta:'爱情·治愈'},
-  {name:'刺猬',heat:298,meta:'剧情·成长'},
-  {name:'盗墓笔记',heat:276,meta:'冒险·悬疑'},
-  {name:'扫毒3：人在天涯',heat:254,meta:'犯罪·动作'},
-  {name:'我经过风暴',heat:232,meta:'剧情·现实'},
-  {name:'怒潮',heat:210,meta:'动作·犯罪'},
-  {name:'一点就到家',heat:198,meta:'喜剧·创业'},
-  {name:'超能一家人',heat:176,meta:'喜剧·科幻'},
-  {name:'前任4：英年早婚',heat:154,meta:'爱情·喜剧'},
-  {name:'燃冬',heat:132,meta:'文艺·爱情'},
-  {name:'白蛇：浮生',heat:121,meta:'动画·爱情'},
-  {name:'海的尽头是草原',heat:110,meta:'剧情·历史'},
-  {name:'明日战记',heat:98,meta:'科幻·动作'},
-  {name:'断·桥',heat:87,meta:'悬疑·犯罪'},
-  {name:'外太空的莫扎特',heat:76,meta:'科幻·喜剧'},
-  {name:'侏罗纪世界3',heat:65,meta:'科幻·冒险'},
-  {name:'新蝙蝠侠',heat:54,meta:'动作·犯罪'},
-  {name:'奇异博士2',heat:43,meta:'科幻·奇幻'},
-  {name:'阿凡达2',heat:35,meta:'科幻·冒险'},
-  {name:'想见你',heat:28,meta:'爱情·悬疑'},
-  {name:'交换人生',heat:21,meta:'喜剧·奇幻'},
-  {name:'目中无人2',heat:15,meta:'武侠·动作'},
-],
-'动漫排行榜': [
-  {name:'斗罗大陆2',heat:98765,meta:'玄幻·冒险'},
-  {name:'完美世界',heat:95432,meta:'玄幻·热血'},
-  {name:'斗破苍穹年番',heat:92108,meta:'玄幻·冒险'},
-  {name:'仙逆',heat:89876,meta:'修仙·冒险'},
-  {name:'凡人修仙传',heat:87543,meta:'修仙·冒险'},
-  {name:'遮天',heat:85210,meta:'玄幻·修仙'},
-  {name:'吞噬星空',heat:82876,meta:'科幻·冒险'},
-  {name:'少年歌行',heat:80543,meta:'武侠·冒险'},
-  {name:'一念永恒',heat:78210,meta:'修仙·搞笑'},
-  {name:'神印王座',heat:76102,meta:'玄幻·热血'},
-  {name:'武动乾坤',heat:73876,meta:'玄幻·冒险'},
-  {name:'沧元图',heat:71543,meta:'玄幻·修仙'},
-  {name:'永生',heat:69210,meta:'仙侠·冒险'},
-  {name:'师兄啊师兄',heat:67102,meta:'修仙·搞笑'},
-  {name:'万界独尊',heat:64876,meta:'玄幻·热血'},
-  {name:'武神主宰',heat:62543,meta:'玄幻·冒险'},
-  {name:'独步逍遥',heat:60210,meta:'玄幻·修仙'},
-  {name:'万古神话',heat:58102,meta:'玄幻·上古'},
-  {name:'诛仙',heat:55876,meta:'仙侠·爱情'},
-  {name:'灵剑尊',heat:53543,meta:'修仙·冒险'},
-  {name:'帝霸',heat:51210,meta:'玄幻·热血'},
-  {name:'盗妖行',heat:49102,meta:'玄幻·搞笑'},
-  {name:'驭灵师',heat:46876,meta:'玄幻·冒险'},
-  {name:'将夜',heat:44543,meta:'玄幻·热血'},
-  {name:'修仙者大战超能力',heat:42210,meta:'修仙·搞笑'},
-  {name:'独尊',heat:40102,meta:'玄幻·修仙'},
-  {name:'偷偷藏不住动态漫画',heat:38321,meta:'恋爱·校园'},
-  {name:'嚣张狂妃',heat:36543,meta:'恋爱·古装'},
-  {name:'暖婚100分',heat:34876,meta:'恋爱·都市'},
-  {name:'萌宝来袭',heat:33102,meta:'恋爱·搞笑'},
-  {name:'绝世武魂',heat:31876,meta:'玄幻·热血'},
-  {name:'万界仙踪',heat:30654,meta:'修仙·冒险'},
-  {name:'妖神记',heat:29432,meta:'玄幻·热血'},
-  {name:'逆天邪神',heat:28210,meta:'玄幻·逆袭'},
-  {name:'大主宰',heat:27012,meta:'玄幻·冒险'},
-  {name:'万渣朝凰',heat:25876,meta:'恋爱·复仇'},
-  {name:'通灵妃',heat:24654,meta:'恋爱·搞笑'},
-  {name:'魔道祖师',heat:23432,meta:'仙侠·冒险'},
-  {name:'天官赐福',heat:22210,meta:'仙侠·剧情'},
-  {name:'一人之下',heat:21012,meta:'玄幻·动作'},
-  {name:'画江湖之不良人',heat:19876,meta:'武侠·悬疑'},
-  {name:'秦时明月',heat:18654,meta:'武侠·历史'},
-  {name:'雪鹰领主',heat:17432,meta:'玄幻·冒险'},
-  {name:'无上神帝',heat:16210,meta:'玄幻·修仙'},
-  {name:'绝世唐门',heat:15012,meta:'玄幻·热血'},
-  {name:'星辰变',heat:13876,meta:'修仙·冒险'},
-  {name:'九天玄帝诀',heat:12654,meta:'玄幻·逆袭'},
-  {name:'万古至尊',heat:11432,meta:'玄幻·热血'},
-  {name:'灵域',heat:10210,meta:'玄幻·冒险'},
-  {name:'动态漫画·斗罗大陆',heat:9012,meta:'玄幻·冒险'},
-  {name:'元龙',heat:7876,meta:'穿越·搞笑'},
-  {name:'百妖谱',heat:6654,meta:'妖怪·治愈'},
-  {name:'镇魂街',heat:5432,meta:'热血·都市'},
-  {name:'全职法师',heat:4210,meta:'玄幻·校园'},
-  {name:'妖怪名单',heat:3012,meta:'都市·恋爱'},
-  {name:'择天记',heat:2102,meta:'玄幻·修仙'},
-  {name:'天行九歌',heat:1543,meta:'武侠·历史'},
-  {name:'狐妖小红娘',heat:1210,meta:'恋爱·妖怪'},
-  {name:'刺客伍六七',heat:987,meta:'搞笑·动作'},
-  {name:'非人哉',heat:876,meta:'搞笑·日常'},
-  {name:'请吃红小豆吧',heat:765,meta:'搞笑·治愈'},
-  {name:'罗小黑战记',heat:654,meta:'妖怪·治愈'},
-  {name:'灵笼',heat:543,meta:'科幻·末世'},
-  {name:'雾山五行',heat:432,meta:'武侠·水墨'},
-  {name:'大理寺日志',heat:321,meta:'探案·搞笑'},
-  {name:'我的三体',heat:210,meta:'科幻·冒险'},
-  {name:'时光代理人',heat:165,meta:'悬疑·治愈'},
-  {name:'中国奇谭',heat:132,meta:'奇幻·短篇'},
-  {name:'长剑风云',heat:108,meta:'武侠·冒险'},
-  {name:'眷思量',heat:96,meta:'仙侠·爱情'},
-  {name:'风起鸣沙',heat:87,meta:'冒险·历史'},
-  {name:'凤凰于飞',heat:78,meta:'恋爱·古风'},
-  {name:'枕刀歌',heat:69,meta:'武侠·复仇'},
-  {name:'少年白马醉春风',heat:60,meta:'武侠·冒险'},
-  {name:'紫川动画版',heat:54,meta:'玄幻·冒险'},
-  {name:'画江湖之天罡',heat:48,meta:'武侠·奇幻'},
-  {name:'侠岚',heat:42,meta:'奇幻·热血'},
-  {name:'武庚纪',heat:38,meta:'神话·热血'},
-  {name:'勇者大冒险',heat:34,meta:'冒险·悬疑'},
-  {name:'画江湖之灵主',heat:30,meta:'玄幻·动作'},
-  {name:'超神学院',heat:27,meta:'科幻·热血'},
-  {name:'茶啊二中',heat:24,meta:'搞笑·校园'},
-  {name:'纳米核心',heat:21,meta:'科幻·机甲'},
-  {name:'双城之战',heat:18,meta:'冒险·奇幻'},
-  {name:'间谍过家家',heat:16,meta:'搞笑·温情'},
-  {name:'鬼灭之刃',heat:14,meta:'热血·冒险'},
-  {name:'咒术回战',heat:12,meta:'热血·奇幻'},
-  {name:'进击的巨人完结篇',heat:10,meta:'热血·史诗'},
-  {name:'葬送的芙莉莲',heat:8,meta:'冒险·治愈'},
-  {name:'海贼王',heat:6,meta:'冒险·热血'},
-],
-'综艺排行榜': [
-  {name:'歌手2025',heat:97654,meta:'音乐·竞技'},
-  {name:'奔跑吧第八季',heat:94321,meta:'户外·真人秀'},
-  {name:'向往的生活8',heat:91108,meta:'慢综艺·田园'},
-  {name:'极限挑战10',heat:88876,meta:'户外·真人秀'},
-  {name:'王牌对王牌9',heat:86543,meta:'室内·游戏'},
-  {name:'中国好声音2025',heat:84210,meta:'音乐·选秀'},
-  {name:'密室大逃脱5',heat:81876,meta:'推理·冒险'},
-  {name:'明星大侦探9',heat:79543,meta:'推理·角色扮演'},
-  {name:'脱口秀大会6',heat:77210,meta:'脱口秀·喜剧'},
-  {name:'乘风破浪5',heat:74876,meta:'音乐·竞技'},
-  {name:'披荆斩棘4',heat:72543,meta:'音乐·竞技'},
-  {name:'爸爸去哪儿6',heat:70210,meta:'亲子·旅行'},
-  {name:'快乐再出发3',heat:68102,meta:'真人秀·旅行'},
-  {name:'花儿与少年6',heat:65876,meta:'旅行·真人秀'},
-  {name:'你好星期六',heat:63543,meta:'游戏·综艺'},
-  {name:'天赐的声音5',heat:61210,meta:'音乐·合作'},
-  {name:'大侦探9',heat:59102,meta:'推理·悬疑'},
-  {name:'五十公里桃花坞4',heat:56876,meta:'社交·真人秀'},
-  {name:'中餐厅8',heat:54543,meta:'美食·经营'},
-  {name:'我们的歌6',heat:52210,meta:'音乐·合唱'},
-  {name:'跑男兄弟团',heat:50102,meta:'真人秀·搞笑'},
-  {name:'哈哈哈哈哈4',heat:47876,meta:'旅行·搞笑'},
-  {name:'声生不息·港乐季',heat:45543,meta:'音乐·经典'},
-  {name:'全员加速中3',heat:43210,meta:'游戏·竞技'},
-  {name:'妻子的浪漫旅行7',heat:41102,meta:'旅行·情感'},
-  {name:'心动的信号7',heat:38876,meta:'恋爱·社交'},
-  {name:'令人心动的offer6',heat:36543,meta:'职场·真人秀'},
-  {name:'种地吧2',heat:34210,meta:'田园·真人秀'},
-  {name:'闪亮的日子',heat:32102,meta:'旅行·音乐'},
-  {name:'喜人奇妙夜',heat:30321,meta:'喜剧·竞技'},
-  {name:'声入人心3',heat:28876,meta:'音乐·美声'},
-  {name:'大家一起孝',heat:27543,meta:'搞笑·孝道'},
-  {name:'奇葩说8',heat:26210,meta:'辩论·脱口秀'},
-  {name:'中国说唱巅峰对决2',heat:24876,meta:'说唱·竞技'},
-  {name:'一年一度喜剧大赛3',heat:23543,meta:'喜剧·竞技'},
-  {name:'名侦探学院6',heat:22210,meta:'推理·学院'},
-  {name:'最强大脑10',heat:20876,meta:'益智·科学'},
-  {name:'青春环游记5',heat:19543,meta:'游戏·旅行'},
-  {name:'哈哈哈哈哈3',heat:18210,meta:'旅行·搞笑'},
-  {name:'为歌而赞3',heat:16876,meta:'音乐·短视频'},
-  {name:'万里挑一',heat:15543,meta:'挑战·竞技'},
-  {name:'说唱听我的3',heat:14210,meta:'说唱·选秀'},
-  {name:'导演请指教2',heat:12876,meta:'影视·竞技'},
-  {name:'了不起的舞社2',heat:11543,meta:'舞蹈·竞技'},
-  {name:'超新星运动会6',heat:10210,meta:'运动·明星'},
-  {name:'爆裂舞台',heat:8876,meta:'舞蹈·竞技'},
-  {name:'上班啦妈妈2',heat:7543,meta:'职场·亲子'},
-  {name:'亲爱的客栈7',heat:6210,meta:'经营·慢综艺'},
-  {name:'我们恋爱吧5',heat:4876,meta:'恋爱·真人秀'},
-  {name:'同一屋檐下',heat:3543,meta:'社交·真人秀'},
-  {name:'你好生活4',heat:2210,meta:'慢综艺·治愈'},
-  {name:'毛雪汪3',heat:1876,meta:'宠物·搞笑'},
-  {name:'现在就出发2',heat:1543,meta:'旅行·冒险'},
-  {name:'闪耀的你',heat:1210,meta:'音乐·成长'},
-  {name:'初入职场的我们3',heat:987,meta:'职场·观察'},
-  {name:'十七岁的夏天',heat:876,meta:'青春·真人秀'},
-  {name:'很高兴认识你2',heat:765,meta:'旅行·文化'},
-  {name:'边走边唱',heat:654,meta:'音乐·旅行'},
-  {name:'食在囧途',heat:543,meta:'美食·旅行'},
-  {name:'追星星的人3',heat:432,meta:'户外·露营'},
-  {name:'拜托了冰箱8',heat:321,meta:'美食·脱口秀'},
-  {name:'百川综艺季',heat:210,meta:'综合·娱乐'},
-  {name:'星星的约定',heat:165,meta:'公益·真人秀'},
-  {name:'舞蹈风暴3',heat:132,meta:'舞蹈·竞技'},
-  {name:'非日常派对',heat:108,meta:'游戏·搞笑'},
-  {name:'快乐大本营2025',heat:87,meta:'游戏·综艺'},
-  {name:'跨次元新星2',heat:65,meta:'虚拟·竞技'},
-  {name:'这是我的岛',heat:43,meta:'生存·真人秀'},
-  {name:'国风大典',heat:32,meta:'国风·文化'},
-  {name:'超级企鹅联盟',heat:28,meta:'运动·竞技'},
-  {name:'认真的嘎嘎们2',heat:25,meta:'音乐·搞笑'},
-  {name:'开工喜剧之夜',heat:22,meta:'喜剧·晚会'},
-  {name:'旅行任意门',heat:20,meta:'旅行·挑战'},
-  {name:'我和我的经纪人2',heat:18,meta:'职场·纪实'},
-  {name:'夏日冲浪店2',heat:16,meta:'运动·真人秀'},
-  {name:'萌探探探案3',heat:14,meta:'推理·搞笑'},
-  {name:'大侦探之海上孤舟',heat:12,meta:'推理·沉浸'},
-  {name:'朋友请听好3',heat:10,meta:'治愈·广播'},
-  {name:'看我的生活3',heat:9,meta:'独居·真人秀'},
-  {name:'心动的信号海外季',heat:8,meta:'恋爱·社交'},
-  {name:'中国新相亲2025',heat:7,meta:'恋爱·相亲'},
-  {name:'天天向上2025',heat:6,meta:'文化·综艺'},
-  {name:'法治进行时特别节目',heat:5,meta:'法治·访谈'},
-  {name:'国乐大典3',heat:4,meta:'音乐·国风'},
-  {name:'爱的修学旅行2',heat:3,meta:'旅行·情感'},
-  {name:'我们的客栈',heat:2,meta:'经营·慢综'},
-  {name:'全员加速中4',heat:1,meta:'游戏·竞技'},
-  {name:'超级变变变2025',heat:1,meta:'创意·竞技'},
-  {name:'明日创作计划',heat:1,meta:'音乐·创作'},
-  {name:'综艺大热门2025',heat:1,meta:'游戏·搞笑'},
-],
-'短剧排行榜': [
-  {name:'闪婚嫁给残疾大佬后',heat:98321,meta:'甜宠·逆袭'},
-  {name:'重生之我在现代当神医',heat:95102,meta:'重生·都市'},
-  {name:'离婚后前夫他后悔了',heat:92876,meta:'虐恋·逆袭'},
-  {name:'穿越成王爷的心尖宠',heat:90543,meta:'穿越·古装'},
-  {name:'闪婚老公是隐藏大佬',heat:88210,meta:'甜宠·豪门'},
-  {name:'重生之千金归来',heat:85876,meta:'重生·复仇'},
-  {name:'龙王令',heat:83543,meta:'都市·逆袭'},
-  {name:'假千金逆袭成真豪门',heat:81210,meta:'逆袭·豪门'},
-  {name:'替嫁新娘：总裁的秘密',heat:78876,meta:'替嫁·甜宠'},
-  {name:'团宠小福星',heat:76543,meta:'萌宝·甜宠'},
-  {name:'重生后我成了大佬的白月光',heat:74210,meta:'重生·甜宠'},
-  {name:'战神归来',heat:72102,meta:'都市·逆袭'},
-  {name:'神医下山',heat:69876,meta:'都市·神医'},
-  {name:'退婚后大佬她飒爆了',heat:67543,meta:'逆袭·爽文'},
-  {name:'鉴宝神医',heat:65210,meta:'都市·鉴宝'},
-  {name:'我的绝色总裁老婆',heat:62876,meta:'都市·甜宠'},
-  {name:'重生八零辣妻撩夫忙',heat:60543,meta:'重生·年代'},
-  {name:'穿书后我成了反派大佬',heat:58210,meta:'穿书·逆袭'},
-  {name:'闪婚后发现老公是首富',heat:55876,meta:'甜宠·豪门'},
-  {name:'凤归',heat:53543,meta:'古装·复仇'},
-  {name:'绝世龙婿',heat:51210,meta:'都市·逆袭'},
-  {name:'重生之最强弃妃',heat:48876,meta:'重生·古装'},
-  {name:'萌宝助攻：妈咪快跑',heat:46543,meta:'萌宝·甜宠'},
-  {name:'特工妈咪不好惹',heat:44210,meta:'特工·甜宠'},
-  {name:'豪门替身新娘',heat:42102,meta:'替嫁·豪门'},
-  {name:'开局签到荒古圣体',heat:39876,meta:'玄幻·逆袭'},
-  {name:'重生后嫁给残疾王爷',heat:37543,meta:'重生·古装'},
-  {name:'绝品医仙在都市',heat:35210,meta:'都市·神医'},
-  {name:'千亿萌宝：妈咪又甜又飒',heat:32876,meta:'萌宝·甜宠'},
-  {name:'女总裁的贴身保镖',heat:30543,meta:'都市·动作'},
-  {name:'重生之都市仙尊',heat:28876,meta:'重生·修仙'},
-  {name:'闪婚后总裁老公超宠的',heat:27543,meta:'甜宠·豪门'},
-  {name:'穿越古代当厨神',heat:26210,meta:'穿越·美食'},
-  {name:'离婚后我嫁给了他哥',heat:24876,meta:'虐恋·豪门'},
-  {name:'重生九零小辣妻',heat:23543,meta:'重生·年代'},
-  {name:'龙王殿',heat:22210,meta:'都市·逆袭'},
-  {name:'假千金她是真大佬',heat:20876,meta:'逆袭·豪门'},
-  {name:'替身王妃不好惹',heat:19543,meta:'古装·替嫁'},
-  {name:'团宠萌宝有空间',heat:18210,meta:'萌宝·空间'},
-  {name:'神豪从天而降',heat:16876,meta:'都市·神豪'},
-  {name:'战神王爷的小娇妻',heat:15543,meta:'古装·甜宠'},
-  {name:'医妃天下',heat:14210,meta:'古装·神医'},
-  {name:'退婚后王爷后悔了',heat:12876,meta:'古装·逆袭'},
-  {name:'重生后我成了学霸',heat:11543,meta:'重生·校园'},
-  {name:'总裁的替嫁新娘',heat:10210,meta:'替嫁·甜宠'},
-  {name:'至尊神殿',heat:8876,meta:'都市·逆袭'},
-  {name:'萌宝驾到：爹地追妻忙',heat:7543,meta:'萌宝·甜宠'},
-  {name:'穿书后反派大佬宠我',heat:6210,meta:'穿书·甜宠'},
-  {name:'重生之嫡女毒妃',heat:4876,meta:'重生·古装'},
-  {name:'闪婚甜妻：老公超给力',heat:3543,meta:'甜宠·都市'},
-  {name:'我在末世捡属性',heat:2210,meta:'末世·逆袭'},
-  {name:'赘婿当道',heat:1876,meta:'都市·逆袭'},
-  {name:'全民领主：开局签到百万大军',heat:1543,meta:'玄幻·领主'},
-  {name:'千金小姐在线打脸',heat:1210,meta:'逆袭·豪门'},
-  {name:'离婚后前妻她美炸了',heat:987,meta:'逆袭·都市'},
-  {name:'重生之我是大明星',heat:876,meta:'重生·娱乐'},
-  {name:'修仙归来在都市',heat:765,meta:'修仙·都市'},
-  {name:'穿越成了王爷心尖上的人',heat:654,meta:'穿越·古装'},
-  {name:'首富从退婚开始',heat:543,meta:'都市·逆袭'},
-  {name:'闪婚蜜爱：大叔宠妻无度',heat:432,meta:'甜宠·年龄差'},
-  {name:'重生之毒妃逆天',heat:321,meta:'重生·古装'},
-  {name:'神医弃女',heat:210,meta:'古装·神医'},
-  {name:'龙婿至尊',heat:165,meta:'都市·逆袭'},
-  {name:'替嫁甜妻：偏执总裁超难缠',heat:132,meta:'替嫁·甜宠'},
-  {name:'穿越后我嫁给了暴君',heat:108,meta:'穿越·古装'},
-  {name:'团宠小奶包：全家都是大佬',heat:87,meta:'萌宝·甜宠'},
-  {name:'重生之绝世医妃',heat:65,meta:'重生·古装'},
-  {name:'闪婚后老公每天都在撩',heat:43,meta:'甜宠·都市'},
-  {name:'战神殿',heat:32,meta:'都市·逆袭'},
-  {name:'重生之我在古代开超市',heat:28,meta:'重生·经商'},
-  {name:'总裁的天价宝贝',heat:25,meta:'豪门·萌宝'},
-  {name:'穿越后我成了皇后',heat:22,meta:'穿越·古装'},
-  {name:'离婚后总裁天天求复合',heat:20,meta:'虐恋·甜宠'},
-  {name:'重生之商业女王',heat:18,meta:'重生·商战'},
-  {name:'神医毒妃不好惹',heat:16,meta:'古装·神医'},
-  {name:'替嫁后被冷面王爷宠上天',heat:14,meta:'替嫁·古装'},
-  {name:'闪婚后发现老公是大佬',heat:12,meta:'甜宠·豪门'},
-  {name:'萌宝出击：总裁爹地投降吧',heat:10,meta:'萌宝·豪门'},
-  {name:'重生之锦绣嫡女',heat:9,meta:'重生·古装'},
-  {name:'龙王赘婿',heat:8,meta:'都市·逆袭'},
-  {name:'穿书后男主他黑化了',heat:7,meta:'穿书·虐恋'},
-  {name:'绝品神医在都市',heat:6,meta:'都市·神医'},
-  {name:'千亿甜妻：老公请签收',heat:5,meta:'甜宠·豪门'},
-  {name:'重生后嫁给了死对头',heat:4,meta:'重生·甜宠'},
-  {name:'特工王妃：王爷太腹黑',heat:3,meta:'古装·特工'},
-  {name:'团宠小公主',heat:2,meta:'萌宝·甜宠'},
-  {name:'闪婚蜜恋：总裁的心尖宠',heat:1,meta:'甜宠·豪门'},
-  {name:'重生之最强女帝',heat:1,meta:'重生·古装'},
-  {name:'逆袭之路：从赘婿到巅峰',heat:1,meta:'都市·逆袭'},
-  {name:'重生后她美飒又多金',heat:1,meta:'重生·逆袭'},
-],
-};
-
-function formatHeat(n) {
-  if (n >= 10000) return (n/10000).toFixed(1) + '万';
-  return n.toString();
-}
-
-function renderRankPage(tabIdx) {
-  curRankTab = tabIdx || 0;
-  const tabName = RANK_TABS[curRankTab];
-  const items = RANKING_DATA[tabName] || [];
-  const hp = document.getElementById('homePage');
-
-  let html = '<div class="section" style="animation:fadeUp .3s ease both">';
-  html += '<div class="section-head"><div class="section-title">&#127942; 排行榜</div></div>';
-
-  // Tabs
-  html += '<div class="rank-tabs">';
-  RANK_TABS.forEach(function(tab, i) {
-    html += '<span class="rank-tab'+(i===curRankTab?' active':'')+'" onclick="renderRankPage('+i+')">'+tab+'</span>';
-  });
-  html += '</div>';
-
-  // Ranking list
-  html += '<div class="rank-list">';
-  items.forEach(function(item, i) {
-    const d = JSON.stringify({name:item.name,type:tabName.replace('排行榜',''),remarks:'',pic:'',actor:'',class:item.meta,area:'',year:''}).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
-    html += '<div class="rank-item" onclick=\'doSearch("'+item.name.replace(/"/g,'\\"')+'")\'>'
-      + '<span class="rank-num">'+(i+1)+'</span>'
-      + '<span class="rank-name">'+esc(item.name)+'</span>'
-      + '<span class="rank-meta">'+esc(item.meta)+'</span>'
-      + '<span class="rank-heat">&#128293; '+formatHeat(item.heat)+'</span>'
-      + '</div>';
-  });
-  html += '</div></div>';
-  hp.innerHTML = html;
-  hp.style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// 过滤无意义的"电影解说"类视频
+function isJieshuo(name) {
+  if (!name) return true;
+  const badWords = ['解说', '速看', '几分钟', '影评', '吐槽', '盘点', 'X分钟', '带你看完', '电影解说', '剧评', '看片'];
+  return badWords.some(word => name.includes(word));
 }
 
 // === NAVIGATION & HOME ===
@@ -2170,572 +1370,106 @@ function renderNav() {
   ).join('');
 }
 
-async function renderHot() {
-  var words = [];
-  var seenW = new Set();
-  
-  // 1. 优先从网页搜索引擎（百度搜索热搜）获取当前国内最火的影视剧
-  try {
-    var baiduHotData = await apiFetch('https://api.vvhan.com/api/hotlist/baidu');
-    if (baiduHotData && baiduHotData.success && Array.isArray(baiduHotData.data)) {
-      var baiduList = baiduHotData.data;
-      for (var i = 0; i < baiduList.length && words.length < 10; i++) {
-        var item = baiduList[i];
-        var name = (item.title || item.name || item.word || '').trim();
-        var desc = (item.desc || item.type || '').toLowerCase();
-        if (!name || name.length < 2 || name.length > 20) continue;
-        if (isContentBlocked(name, '', '', '')) continue;
-        if (name.includes('解说') || name.includes('几分钟') || name.includes('速看') || name.includes('影评') || name.includes('吐槽')) continue;
-        
-        // 过滤出影视相关的词（包含剧、电影、综艺、动漫，或描述中包含上映、播出、主演等）
-        var isMedia = /剧|电影|综艺|动漫|番|上映|播出|大结局|主演|导演|开播/i.test(name + ' ' + desc);
-        if (isMedia && !seenW.has(name)) {
-          words.push(name);
-          seenW.add(name);
-        }
+
+// === 静态热播剧名列表（API获取失败时的兜底） ===
+const STATIC_FALLBACK_SHOWS = {
+  tv: ['师兄太稳健','在下打更人','除恶','金色','九门','浮生之白蛇前缘','蝉','重器','重案六组：消失的警号','雀骨','赴山海','漂白','老舅','驻站','大奉打更人','九重紫','清明上河图密码','我是刑警','猎罪图鉴2','蔷薇风暴','天下同心','斗罗大陆2','珠帘玉幕','好运家','灿烂的风和海','我是大神仙','斗破苍穹年番','凡人修仙传','完美世界','吞噬星空','仙逆','长相思2','庆余年2','与凤行','繁花','南来北往','大江大河3','狂飙','漫长的季节','三体','去有风的地方','开端','人世间','山海情','觉醒年代','装台','以家人之名','三十而已','隐秘的角落','沉默的真相','风起陇西','警察荣誉','欢迎光临','重生之门','特战荣耀','亲爱的小孩','超越','雪中悍刀行','斛珠夫人','扫黑风暴','功勋','理想之城'],
+  movie: ['蜘蛛侠：崭新之日','功夫女足','八仙！特种保镖2','触不可及','功夫熊猫','宗师叶问','青铜护卫队','小气鬼','灵魂摆渡·蝴蝶梦','猎虎贰','灵魂摆渡·天女之梦','寒战1994','火遮眼','哪吒之魔童闹海','射雕英雄传侠之大者','封神第二部','唐探1900','熊出没重启未来','蛟龙行动','误杀3','匿杀','用武之地','疯狂动物城2','阿凡达3','寻秦记','得闲谨制','窗前明月','点到为止','过家家','重返狼群','爆水管','拼命三郎','长安的荔枝','你行你上','戏台','罗小黑战记2','浪浪山小妖怪','南京照相馆','东极岛','捕风追海','76天','坏蛋联盟2','玛丽和麦克斯','F1狂飙飞车','侏罗纪世界重生','超人','碟中谍8','驯龙高手真人版','惊天魔盗团3','编号17','美国队长4','变形金刚超能勇士崛起','蜘蛛侠纵横宇宙','银河护卫队3','奥本海默','芭比','超级马里奥兄弟大电影','灌篮高手','流浪地球2','满江红','孤注一掷','消失的她','封神第一部'],
+  variety: ['歌手2025','奔跑吧第九季','极限挑战第十一季','你好星期六','乘风2025','披荆斩棘第四季','密室大逃脱第六季','全员加速中2025','种地吧第三季','五十公里桃花坞第五季','我的音乐你听吗第二季','声生不息大湾区季','再见爱人第五季','花儿与少年好友记','大侦探第十季','最强大脑第十二季','令人心动的offer第六季','超时空寻找','喜人奇妙夜第二季','脱口秀和Ta的朋友们','喜剧之王单口季第二季','哈哈哈哈哈第五季','现在就出发第二季','萌探2024','追风吧少年第二季','我们恋爱吧第六季','心动的信号第七季','再见爱人第四季','披荆斩棘第三季','乐队的夏天第三季','这就是街舞第六季','中国说唱巅峰对决','奇葩说第八季','明星大侦探第九季','向往的生活第七季','天赐的声音第四季','无限超越班第二季','声生不息宝岛季','妻子的浪漫旅行'],
+  anime: ['斗破苍穹年番','完美世界','吞噬星空','凡人修仙传','仙逆','斗罗大陆2绝世唐门','一念永恒','神印王座','沧元图','遮天','师兄啊师兄','百炼成神','灵剑尊','万界仙踪','独步逍遥','绝世武魂','万界神主','逆天至尊','大主宰','星辰变第六季','武动乾坤第五季','全职法师第六季','鬼灭之刃柱训练篇','咒术回战第二季','进击的巨人最终季','一拳超人第三季','我的英雄学院第七季','间谍过家家第二季','药屋少女的呢喃','葬送的芙莉莲','迷宫饭','我推的孩子第二季','无职转生第三季','关于我转生变成史莱姆这档事第三季','Re零从零开始的异世界生活第三季','刀剑神域Progressive','蓝色监狱第二季','排球少年垃圾场决战','怪兽8号','终末的女武神第二季'],
+  shortdrama: ['闪婚老伴是豪门','闪婚后傅总马甲藏不住了','我在八零年代当后妈','裴总每天都想父凭子贵','重生之后我成了自己的情敌','离婚后前夫跪求复合','被渣后我闪婚了千亿总裁','夫人她马甲又轰动全城了','龙年大吉之衣锦还乡','哎呀皇后娘娘来打工','闪婚总裁契约妻','恰似寒光遇骄阳','陆总夫人她罪不至死','重生小娇妻','傅总夫人又把你拉黑了','前夫求饶夫人已经嫁人了','离婚后前总他追悔莫及','重生后我手撕了渣男一家','重生八零媳妇有点辣','天降萌宝总裁爹地超给力','一胎二宝总裁爹地请签收','隐婚蜜爱总裁老公超宠的','重生后我成了权臣的掌中娇','闪婚蜜爱总裁老公宠上天','离婚后前夫他追悔莫及','重生后我嫁给了前夫的叔叔','重生之我在后宫当团宠','重生后我成了皇帝的白月光','重生后我成了太子的掌心宠','重生后我成了王爷的白月光']
+};
+
+// === 后台获取最新热播数据（从API源获取，失败则用静态列表） ===
+async function fetchHotShowsByCategory() {
+  var result = { tv: [], movie: [], variety: [], anime: [], shortdrama: [] };
+  var catMap = { tv: '电视剧', movie: '电影', variety: '综艺', anime: '动漫', shortdrama: '短剧' };
+  var tasks = Object.keys(catMap).map(async function(key) {
+    try {
+      var catName = catMap[key];
+      var items = await apiLoadCatFull(catName);
+      if (items && items.length >= 5) {
+        result[key] = items.slice(0, 60).map(function(it) { return it.name; }).filter(Boolean);
       }
+    } catch(e) {}
+  });
+  await Promise.all(tasks);
+  // 对任何没有拿到数据的分类，使用静态列表兜底
+  Object.keys(result).forEach(function(key) {
+    if (!result[key] || result[key].length < 3) {
+      result[key] = STATIC_FALLBACK_SHOWS[key] || [];
     }
-  } catch(e) {}
-  
-  // 2. 如果搜索引擎获取的不够，从 CURATED_HOT 补充
-  if (words.length < 10) {
-    var cats = ['电视剧','电影','综艺','动漫','短剧'];
-    for (var ci = 0; ci < cats.length && words.length < 15; ci++) {
-      var curated = CURATED_HOT[cats[ci]] || [];
-      for (var ii = 0; ii < curated.length && words.length < 15; ii++) {
-        var name2 = curated[ii].name;
-        if (name2 && !seenW.has(name2) && !isContentBlocked(name2, '', '', '')) {
-          words.push(name2);
-          seenW.add(name2);
-        }
-      }
-    }
-  }
-  
-  document.getElementById('hotBar').innerHTML = '<div class="hot-inner">'
-    + words.map(w => '<span class="hot-tag" onclick="doSearch(\''+w.replace(/'/g,"\\'")+'\')">'+w+'</span>').join('') + '</div>';
+  });
+  return result;
 }
 
 async function loadHome() {
-  const gen = ++_navGeneration;
-  const hp = document.getElementById('homePage');
+  var gen = ++_navGeneration;
+  var hp = document.getElementById('homePage');
   document.getElementById('searchPage').style.display = 'none';
   document.getElementById('heroSection').style.display = '';
   document.getElementById('filterBar').classList.remove('show');
   hp.style.display = '';
 
-  let html = '';
-  
-  // 1. 上方：全网实时热播区块 (初始显示加载中，稍后异步填充)
-  html += '<div class="trending-live-section trending-main" id="trendingSection">';
-  html += '<div class="section-head"><div class="section-title">&#128293; 全网实时热播 <span class="live-badge"><span class="live-dot"></span>LIVE</span> <span style="font-size:12px;color:var(--sub);font-weight:400;margin-left:8px;"></span></div>';
-  html += '<span class="trending-refresh" onclick="refreshTrendingLive()">&#8635; 刷新</span>';
-  html += '</div>';
-  html += '<div id="trendingContent" style="margin-top:16px;"><div class="trending-loading"><div class="spin"></div><span>正在获取全网热播数据...</span></div></div>';
-  html += '</div>';
+  // 分类配置
+  var categories = [
+    { key: 'tv', name: '电视剧热播', logo: '电视剧', cls: 'plat-douban', catIdx: CATS.indexOf('电视剧') },
+    { key: 'movie', name: '电影热播', logo: '电影', cls: 'plat-baidu', catIdx: CATS.indexOf('电影') },
+    { key: 'variety', name: '综艺热播', logo: '综艺', cls: 'plat-mgtv', catIdx: CATS.indexOf('综艺') },
+    { key: 'anime', name: '动漫热播', logo: '动漫', cls: 'plat-iqiyi', catIdx: CATS.indexOf('动漫') },
+    { key: 'shortdrama', name: '短剧热播', logo: '短剧', cls: 'plat-shortdrama', catIdx: -1 }
+  ];
 
-  // 2. 下方：固定热播分类区块 (原样保留您的片源，并过滤掉电影解说类)
-  const catOrder = ['电视剧','电影','综艺','动漫','短剧'];
-  catOrder.forEach((cat, ci) => {
-    const items = (CURATED_HOT[cat] || []).filter(it => !isJieshuo(it.name));
-    if (!items.length) return;
-    const catIdx = CATS.indexOf(cat);
-    const icon = SECTION_ICONS[cat] || '';
-    html += '<div class="section"><div class="section-head">'
-      + '<div class="section-title">' + icon + ' ' + cat+'热播</div>'
-      + '<span class="section-more" onclick="switchCat('+catIdx+')">查看全部 ›</span>'
+  // === 第一步：立刻渲染静态剧名列表（不转圈，不等网络）===
+  var html = '<div style="margin-bottom:8px;font-size:13px;color:var(--sub);text-align:center;padding:8px 0 16px">点击剧名即可搜索播放</div>';
+  categories.forEach(function(cat, ci) {
+    var names = STATIC_FALLBACK_SHOWS[cat.key] || [];
+    html += '<div class="platform-section" id="catSec_'+ci+'">'
+      + '<div class="platform-header">'
+      + '<span class="platform-logo '+cat.cls+'">'+cat.logo+'</span>'
+      + '<span class="platform-count" id="catCount_'+ci+'">' + names.length + '部热播</span>'
+      + (cat.catIdx >= 0 ? '<span class="platform-more" onclick="switchCat('+cat.catIdx+')">更多 ›</span>' : '')
       + '</div>'
-      + '<div class="grid">'+items.slice(0, 24).map((it,i)=>cardHTML(it,i,true)).join('')+'</div></div>';
+      + '<div class="name-list" id="catList_'+ci+'">'
+      + names.slice(0, 60).map(function(name, i) {
+          var safe = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+          var cls = i < 3 ? ' name-top' : '';
+          return '<span class="name-item' + cls + '" onclick="doSearch(\'' + safe + '\')">'
+            + '<span class="ni-idx">' + (i+1) + '</span>' + esc(name) + '</span>';
+        }).join('')
+      + '</div></div>';
   });
-  
   hp.innerHTML = html;
 
-  // Aggressively preload all homepage poster images from cache immediately
-  preloadHomepageImagesFromCache();
-  fetchHomepageImages(catOrder);
-  
-  // 3. 异步获取并渲染最新热播数据 (24小时缓存，只追加不淘汰原片名)
-  loadAndRenderTrendingLive(gen);
-}
-
-// === 实时热播分页状态 ===
-let _trendingPage = 1;
-const TRENDING_PER_PAGE = 20;
-let _currentTrendingData = [];
-
-// 强制刷新实时热播数据 (清除24小时缓存并重置页码)
-function refreshTrendingLive() {
-  localStorage.removeItem('wyh_live_trending_full');
-  _trendingPage = 1;
-  loadAndRenderTrendingLive(_navGeneration, true); // true 表示强制刷新
-}
-
-// 切换实时热播分页
-function changeTrendingPage(page) {
-  _trendingPage = page;
-  renderTrendingContent(_navGeneration, _currentTrendingData);
-  
-  // 如果翻到最后一页，且没有在播放视频，尝试在后台继续获取更多数据
-  const totalPages = Math.ceil(_currentTrendingData.length / TRENDING_PER_PAGE);
-  if (page >= totalPages && !_playerOpen) {
-    fetchMoreTrendingDataInBackground();
-  }
-}
-
-// 后台静默获取更多热播数据 (只要没在播放视频就不断追加)
-async function fetchMoreTrendingDataInBackground() {
-  if (_playerOpen) return;
-  
-  // 尝试从各大平台抓取更多榜单数据 (扩展更多分类以获取更多剧名)
-  const platforms = [
-    { name: '腾讯', url: 'https://api.vvhan.com/api/hotlist/qq' },
-    { name: '爱奇艺', url: 'https://api.vvhan.com/api/hotlist/iqiyi' },
-    { name: '优酷', url: 'https://api.vvhan.com/api/hotlist/youku' },
-    { name: '芒果', url: 'https://api.vvhan.com/api/hotlist/mgtv' },
-    { name: '豆瓣电影', url: 'https://api.vvhan.com/api/hotlist/douban_movie' },
-    { name: '豆瓣电视', url: 'https://api.vvhan.com/api/hotlist/douban_tv' },
-    { name: '微博影视', url: 'https://api.vvhan.com/api/hotlist/weibo_film' },
-    { name: '百度影视', url: 'https://api.vvhan.com/api/hotlist/baidu_film' }
-  ];
-  
-  const newItems = [];
-  const seen = new Set(_currentTrendingData.map(item => item.name.toLowerCase().replace(/\s+/g, '')));
-  
-  // 并发请求多个平台的榜单
-  const promises = platforms.map(async (p) => {
-    try {
-      const data = await apiFetch(p.url);
-      if (data && data.success && Array.isArray(data.data)) {
-        data.data.forEach(item => {
-          const name = (item.title || item.name || item.word || '').trim();
-          const normName = name.toLowerCase().replace(/\s+/g, '');
-          if (name && name.length >= 2 && !seen.has(normName) && !isJieshuo(name) && !isContentBlocked(name, '', '', '')) {
-            seen.add(normName);
-            newItems.push({
-              name: name,
-              platform: p.name,
-              type: (p.url.includes('movie') || p.url.includes('film')) ? '电影' : '电视剧',
-              heat: item.hot || item.score || 0,
-              order: _currentTrendingData.length + newItems.length + 1
-            });
-          }
-        });
-      }
-    } catch(e) {}
-  });
-  
-  await Promise.all(promises);
-  
-  // 如果获取到了新数据，追加到总列表中并重新渲染
-  if (newItems.length > 0) {
-    _currentTrendingData = _currentTrendingData.concat(newItems);
-    
-    // 按热度重新排序并分配 order
-    _currentTrendingData.sort((a, b) => (b.heat || 0) - (a.heat || 0));
-    _currentTrendingData.forEach((item, i) => { item.order = i + 1; });
-    
-    // 更新缓存
-    try {
-      localStorage.setItem('wyh_live_trending_full', JSON.stringify({
-        items: _currentTrendingData,
-        ts: Date.now()
-      }));
-    } catch(e) {}
-    
-    // 重新渲染，页数会自动根据新数据量增加
-    renderTrendingContent(_navGeneration, _currentTrendingData);
-  }
-}
-
-// 安全兜底函数：防止旧代码中残留的调用导致 JS 崩溃
-function isContentBlocked() { return false; }
-
-// 过滤无意义的“电影解说”类视频
-function isJieshuo(name) {
-  if (!name) return true;
-  const badWords = ['解说', '速看', '几分钟', '影评', '吐槽', '盘点', 'X分钟', '带你看完', '电影解说', '剧评', '看片'];
-  return badWords.some(word => name.includes(word));
-}
-
-// 内置全网各大平台真实热播剧名列表 (扩充至 200+ 部，确保即使 API 失败也有海量数据)
-const RAW_TRENDING_NAMES = "繁花,庆余年第二季,玫瑰的故事,狐妖小红娘月红篇,墨雨云间,度华年,执行法官,海天雄鹰,看不见影子的少年,边水往事,雪迷宫,前途无量,小夫妻,孤舟,法证先锋VI,四方馆,柳舟记,私藏浪漫,永夜星河,珠帘玉幕,小巷人家,好团圆,大梦归离,宿敌,白夜破晓,我是刑警,清明上河图密码,九重紫,猎罪图鉴2,冬至,大奉打更人,国色芳华,白月梵星,相思令,五福临门,难哄,雁回时,滤镜,余烬之上,六姊妹,仙台有树,掌心,白色橄榄树,180天重启计划,漫城,树下有片红房子,爱你,我的后半生,北上,黄雀,棋士,沙尘暴,暗河传,无忧渡,念无双,桃花映江山,锦绣安宁,藏海传,折腰,赴山海,长相思,长相思第二季,莲花楼,宁安如梦,一念关山,与凤行,承欢记,春色寄情人,微暗之火,新生,我的阿勒泰,庆余年,甄嬛传,知否知否应是绿肥红瘦,琅琊榜,父母爱情,觉醒年代,山海情,狂飙,漫长的季节,三体,大江大河,大江大河之岁月如歌,追风者,城中之城,哈尔滨一九四四,孤战迷城,暗夜与黎明,上甘岭,好家伙,伪装者,风筝,悬崖,潜伏,黎明之前,暗算,红色,北平无战事,大明王朝1566,走向共和,雍正王朝,康熙王朝,汉武大帝,贞观之治,神探狄仁杰,大宋提刑官,大宅门,乔家大院,闯关东,走西口,大染坊,士兵突击,我的团长我的团,亮剑,雪豹,黑狐,苍狼,铁血使命,女子炸弹部队,抗日奇侠,永不磨灭的番号,战长沙,红色摇篮,井冈山,长征,延安颂,解放,建国大业,建党伟业,建军大业,风声,悬崖之上,满江红,流浪地球,流浪地球2,封神第一部,第二十条,热辣滚烫,飞驰人生2,熊出没逆转时空,周处除三害,沙丘2,哥斯拉大战金刚2,功夫熊猫4,你想活出怎样的人生,间谍过家家代号白,维和防暴队,末路狂花钱,九龙城寨之围城,谈判专家,走走停停,扫黑决不放弃,抓娃娃,默杀,解密,逆行人生,白蛇浮生,姥姥的外孙,异形夺命舰,刺猬,出走的决心,野孩子,749局,志愿军存亡之战,浴火之路,危机航线,爆款好人,只此青绿,焚城,胜券在握,好东西,角斗士2,海洋奇缘2,魔法坏女巫,狮子王木法沙传奇,误杀3,小小的我,骗骗喜欢你,恶行之外,假爸爸,大红包2龙凤呈祥,猎毒极速追击,长安的荔枝,酱园弄,哪吒之魔童闹海,封神第二部战火西岐,射雕英雄传侠之大者,熊出没重启未来,唐探1900,蛟龙行动,哪吒2,射雕,封神2,唐探,蛟龙,熊出没,哪吒之魔童降世,战狼2,你好李焕英,唐人街探案3,长津湖,长津湖之水门桥,孤注一掷,消失的她,八角笼中,年会不能停,飞驰人生,流浪地球3,满江红2,唐人街探案4,流浪地球,战狼3,红海行动,湄公河行动,拆弹专家2,怒火·重案,悬崖之上2,长津湖3,志愿军2,封神第三部,哪吒之魔童降世2,深海,大圣归来,大鱼海棠,姜子牙,新神榜杨戬,长安三万里,雄狮少年,白蛇缘起,青蛇劫起,新神榜哪吒重生,罗小黑战记,十万个冷笑话,大护法,妙先生,雾山五行,刺客伍六七,灵笼,凡人修仙传,斗破苍穹,完美世界,吞噬星空,斗罗大陆,武庚纪,西行纪,画江湖之不良人,秦时明月,天行九歌,少年歌行,少年白马醉春风,狐妖小红娘,一人之下,一人之下剧场版,一人之下第五季,一人之下第四季,一人之下第三季,一人之下第二季,一人之下第一季,全职高手,全职高手特别篇,魔道祖师,天官赐福,天官赐福第二季,百妖谱,百妖谱第二季,百妖谱第三季,时光代理人,时光代理人第二季,灵笼第二季,三体动画,大理寺日志,大理寺日志第二季,伍六七之玄武国,伍六七之暗影宿命,刺客伍六七第一季,刺客伍六七第二季,刺客伍六七第三季,刺客伍六七第四季,雾山五行犀川幻紫林,雾山五行闻人翊悬篇,雾山五行第三季,雾山五行第四季,雾山五行第五季,雾山五行第六季,雾山五行第七季,雾山五行第八季,雾山五行第九季,雾山五行第十季";
-
-const HARDCODED_TRENDING_NAMES = RAW_TRENDING_NAMES.split(',').map((name, i) => ({
-  name: name.trim(),
-  platform: ['腾讯','爱奇艺','优酷','芒果','央视','豆瓣','微博'][i % 7]
-}));
-
-// 独立渲染函数：负责将数据渲染到页面
-function renderTrendingContent(gen, data) {
-  if (gen !== _navGeneration) return;
-  const container = document.getElementById('trendingContent');
-  if (!container) return;
-  
-  _currentTrendingData = data;
-  
-  // 更新总数显示，让用户一眼看到数据量
-  const countEl = document.getElementById('trendingTotalCount');
-  if (countEl) countEl.textContent = '(共 ' + data.length + ' 部热播)';
-  
-  if (!data || data.length === 0) {
-    container.innerHTML = '<div class="trending-empty">暂无数据，请查看下方固定热播</div>';
-    return;
-  }
-  
-  const totalPages = Math.ceil(data.length / TRENDING_PER_PAGE);
-  if (_trendingPage > totalPages) _trendingPage = 1;
-  
-  const startIdx = (_trendingPage - 1) * TRENDING_PER_PAGE;
-  const pageData = data.slice(startIdx, startIdx + TRENDING_PER_PAGE);
-  
-  let html = '<div class="trending-rank-list">';
-  pageData.forEach(function(item, i) {
-    const platformTag = item.platform ? '<span style="font-size:10px;color:var(--accent);margin-left:4px;">[' + item.platform + ']</span>' : '';
-    const yearTag = (item.type === '电视剧' || item.type === '电影') ? ' <span class="new-tag">热</span>' : '';
-    
-    html += '<div class="trending-rank-item" onclick="doSearch(\'' + item.name.replace(/'/g, "\\'") + '\')">';
-    html += '<span class="tr-num">' + (startIdx + i + 1) + '</span>';
-    html += '<span class="tr-name">' + esc(item.name) + yearTag + '</span>';
-    html += '<span class="tr-meta">' + platformTag + '</span>';
-    html += '</div>';
-  });
-  html += '</div>';
-  
-  // 渲染分页控件
-  if (totalPages > 1) {
-    html += '<div class="pager" style="margin-top:20px;">';
-    html += '<span class="pager-btn' + (_trendingPage <= 1 ? ' disabled' : '') + '" onclick="changeTrendingPage(' + (_trendingPage - 1) + ')">上一页</span>';
-    
-    let startP = Math.max(1, _trendingPage - 2);
-    let endP = Math.min(totalPages, _trendingPage + 2);
-    
-    if (startP > 1) {
-      html += '<span class="pager-btn" onclick="changeTrendingPage(1)">1</span>';
-      if (startP > 2) html += '<span class="pager-info">...</span>';
-    }
-    
-    for (let p = startP; p <= endP; p++) {
-      html += '<span class="pager-btn' + (p === _trendingPage ? ' active' : '') + '" onclick="changeTrendingPage(' + p + ')">' + p + '</span>';
-    }
-    
-    if (endP < totalPages) {
-      if (endP < totalPages - 1) html += '<span class="pager-info">...</span>';
-      html += '<span class="pager-btn" onclick="changeTrendingPage(' + totalPages + ')">' + totalPages + '</span>';
-    }
-    
-    html += '<span class="pager-btn' + (_trendingPage >= totalPages ? ' disabled' : '') + '" onclick="changeTrendingPage(' + (_trendingPage + 1) + ')">下一页</span>';
-    html += '<span class="pager-info">共 ' + totalPages + ' 页</span>';
-    html += '</div>';
-  }
-  
-  container.innerHTML = html;
-}
-
-// 加载并渲染实时热播数据 (多源并发获取 + 热度排序 + 播放时暂停 + 过滤解说)
-async function loadAndRenderTrendingLive(gen, forceRefresh = false) {
-  const cacheKey = 'wyh_live_trending_full';
-  let trendingData = null;
-  
-  // 1. 尝试从 localStorage 读取 (24小时有效)，如果是强制刷新则跳过
-  if (!forceRefresh) {
-    try {
-      const stored = localStorage.getItem(cacheKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Date.now() - parsed.ts < TRENDING_CACHE_TTL && parsed.items && parsed.items.length > 0) {
-          trendingData = parsed.items;
-        }
-      }
-    } catch(e) {}
-  }
-
-  // 2. 如果没有缓存，先用内置数据兜底，确保瞬间显示，不转圈等待
-  if (!trendingData || trendingData.length === 0) {
-    trendingData = HARDCODED_TRENDING_NAMES.map((item, i) => ({
-      name: item.name,
-      platform: item.platform,
-      type: '电视剧',
-      heat: 1000 - i, // 赋予初始热度用于排序
-      order: i + 1
-    })).filter(item => !isJieshuo(item.name));
-  }
-
-  // 立即渲染当前拥有的数据
-  renderTrendingContent(gen, trendingData);
-
-  // 3. 后台静默获取更多真实榜单数据 (如果正在播放视频，则暂停加载以节省资源并避免干扰)
-  if (_playerOpen) return; 
-
-  try {
-    const platforms = [
-      { key: 'qq', name: '腾讯' },
-      { key: 'iqiyi', name: '爱奇艺' },
-      { key: 'youku', name: '优酷' },
-      { key: 'mgtv', name: '芒果' },
-      { key: 'douban_tv', name: '豆瓣电视剧' },
-      { key: 'douban_movie', name: '豆瓣电影' },
-      { key: 'weibo_film', name: '微博影视' },
-      { key: 'baidu_film', name: '百度影视' }
-    ];
-
-    // 如果中途开始播放，中断请求
-    if (_playerOpen) return;
-
-    const fetchPromises = platforms.map(async (p) => {
-      try {
-        const res = await apiFetch('https://api.vvhan.com/api/hotlist/' + p.key);
-        if (res && res.success && Array.isArray(res.data)) {
-          return res.data.map((item, i) => ({
-            name: (item.title || item.name || '').trim(),
-            platform: p.name,
-            type: (p.key.includes('douban') && p.key.includes('movie')) ? '电影' : '电视剧',
-            heat: item.hot || (1000 - i), // 使用真实热度或排名作为热度
-            order: i + 1
-          })).filter(item => item.name && item.name.length > 1 && !isJieshuo(item.name) && !isContentBlocked(item.name, '', '', ''));
-        }
-      } catch(e) { return []; }
-      return [];
-    });
-
-    const results = await Promise.all(fetchPromises);
-    
-    // 合并、去重、按热度排序
-    const mergedMap = new Map();
-    trendingData.forEach(item => {
-      const norm = item.name.replace(/\s+/g, '').toLowerCase();
-      mergedMap.set(norm, item);
-    });
-
-    results.forEach(list => {
-      list.forEach(item => {
-        const norm = item.name.replace(/\s+/g, '').toLowerCase();
-        if (!mergedMap.has(norm)) {
-          mergedMap.set(norm, item);
-        } else {
-          // 如果已存在，保留热度更高的
-          const existing = mergedMap.get(norm);
-          if (item.heat > existing.heat) {
-            existing.heat = item.heat;
-            existing.platform = item.platform; // 更新来源
-          }
-        }
-      });
-    });
-
-    // 转换为数组并按热度降序排列
-    let newData = Array.from(mergedMap.values()).sort((a, b) => (b.heat || 0) - (a.heat || 0));
-    
-    // 重新分配 order
-    newData.forEach((item, i) => { item.order = i + 1; });
-
-    // 核心逻辑：将获取到的标准剧名，追加到下方固定片源 CURATED_HOT 中，绝不淘汰原片名
-    newData.forEach(item => {
-      if (item.type === '电视剧' || item.type === '电影') {
-        const catList = CURATED_HOT[item.type] || [];
-        const normName = item.name.replace(/\s+/g, '').toLowerCase();
-        if (!catList.some(it => it.name.replace(/\s+/g, '').toLowerCase() === normName)) {
-          catList.push({
-            name: item.name,
-            type: item.type,
-            class: '',
-            area: '大陆',
-            year: new Date().getFullYear().toString(),
-            remarks: item.type === '电视剧' ? '热播中' : '正片',
-            pic: '',
-            actor: ''
-          });
-          CURATED_HOT[item.type] = catList;
-        }
-      }
-    });
-
-    // 保存到 localStorage (24小时有效)
-    if (newData.length > 0) {
-      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: newData }));
-    }
-
-    // 4. 重新渲染更新后的数据 (如果未开始播放且导航未切换)
-    if (!_playerOpen && gen === _navGeneration) {
-      _globalTrendingData = newData; // 保存全局数据
-      renderTrendingContent(gen, newData);
-      
-      // 5. 启动无限加载机制：只要不观看剧，就每隔3秒持续追加更多热播数据，彻底突破分页限制
-      if (!_trendingAutoLoadInterval) {
-        _trendingAutoLoadInterval = setInterval(function() {
-          if (_playerOpen) return; // 观看时暂停加载，节省资源
-          
-          const platforms = [
-            { key: 'qq', name: '腾讯' }, { key: 'iqiyi', name: '爱奇艺' },
-            { key: 'youku', name: '优酷' }, { key: 'mgtv', name: '芒果' },
-            { key: 'douban_tv', name: '豆瓣电视剧' }, { key: 'douban_movie', name: '豆瓣电影' }
-          ];
-          
-          Promise.all(platforms.map(async (p) => {
-            try {
-              const res = await apiFetch('https://api.vvhan.com/api/hotlist/' + p.key);
-              if (res && res.success && Array.isArray(res.data)) {
-                return res.data.map((item, i) => ({
-                  name: (item.title || item.name || '').trim(),
-                  platform: p.name,
-                  type: (p.key.includes('douban') && p.key.includes('movie')) ? '电影' : '电视剧',
-                  heat: item.hot || (1000 - i),
-                  order: _globalTrendingData.length + i + 1
-                })).filter(item => item.name && item.name.length > 1 && !isJieshuo(item.name));
-              }
-            } catch(e) { return []; }
-            return [];
-          })).then(results => {
-            if (_playerOpen) return;
-            
-            const listContainer = document.querySelector('.trending-rank-list');
-            const countEl = document.getElementById('trendingTotalCount');
-            
-            if (!listContainer) return;
-            
-            let addedCount = 0;
-            let newHtml = '';
-            
-            results.forEach(list => {
-              list.forEach(item => {
-                const norm = item.name.replace(/\s+/g, '').toLowerCase();
-                // 检查是否已经存在
-                let exists = false;
-                for (let i = 0; i < _globalTrendingData.length; i++) {
-                  if (_globalTrendingData[i].name.replace(/\s+/g, '').toLowerCase() === norm) {
-                    exists = true;
-                    break;
-                  }
-                }
-                
-                if (!exists) {
-                  _globalTrendingData.push(item);
-                  addedCount++;
-                  const platformTag = item.platform ? '<span style="font-size:10px;color:var(--accent);margin-left:4px;">[' + item.platform + ']</span>' : '';
-                  const yearTag = (item.type === '电视剧' || item.type === '电影') ? ' <span class="new-tag">热</span>' : '';
-                  newHtml += '<div class="trending-rank-item" onclick="doSearch(\'' + item.name.replace(/'/g, "\\'") + '\')">';
-                  newHtml += '<span class="tr-num">' + _globalTrendingData.length + '</span>';
-                  newHtml += '<span class="tr-name">' + esc(item.name) + yearTag + '</span>';
-                  newHtml += '<span class="tr-meta">' + platformTag + '</span>';
-                  newHtml += '</div>';
-                }
-              });
-            });
-            
-            // 如果有新数据，直接追加到 DOM 末尾，并更新总数，彻底绕过任何分页限制
-            if (addedCount > 0) {
-              listContainer.insertAdjacentHTML('beforeend', newHtml);
-              if (countEl) countEl.textContent = '(共 ' + _globalTrendingData.length + ' 部热播，持续加载中...)';
-            }
-          });
-        }, 3000); // 每3秒持续加载一次，越多越好
-      }
-    }
-
-  } catch(e) {
-    console.warn('后台获取热播数据失败:', e);
-  }
-}
-
-// Preload homepage poster images from cache (only visible ones)
-function preloadHomepageImagesFromCache() {
-  if (_playerOpen) return;
-  var cache = getImgCache();
-  var urls = [];
-  var cats = ['电视剧','电影','综艺','动漫','短剧'];
-  cats.forEach(function(cat) {
-    var items = CURATED_HOT[cat] || [];
-    items.slice(0, 24).forEach(function(item) {
-      var url = item.pic || cache[item.name];
-      if (url) {
-        urls.push(proxyImg(url));
-        if (!item.pic && cache[item.name]) item.pic = cache[item.name];
-      }
-    });
-  });
-  // Load all images concurrently - browser handles connection pooling
-  // This uses significant bandwidth initially for fast poster display
-  var loaded = 0;
-  var total = urls.length;
-  urls.forEach(function(url) {
-    var img = new Image();
-    img.referrerPolicy = 'no-referrer';
-    img.src = url;
-  });
-}
-
-async function fetchHomepageImages(cats) {
-  const gen = _navGeneration;
-  // Stagger: fetch first 2 categories immediately, then rest after a delay
-  for (let ci = 0; ci < cats.length; ci++) {
-    const cat = cats[ci];
+  // === 第二步：后台静默尝试获取最新数据（不阻塞页面）===
+  fetchHotShowsByCategory().then(function(shows) {
     if (gen !== _navGeneration) return;
-    if (_playerOpen) return;
-    // After first 2 categories, add a small delay to avoid flooding the network
-    if (ci === 2) await new Promise(r => setTimeout(r, 1500));
-    try {
-      const apiItems = await apiLoadCatFull(cat);
-      if (gen !== _navGeneration) return; // 再次检查
-      if (!apiItems.length) continue;
-      const curated = CURATED_HOT[cat] || [];
-      const enriched = enrichWithApi(cat, curated, apiItems);
-      _catCache[cat] = { data: enriched, ts: Date.now() };
-      CURATED_HOT[cat] = enriched;
-      const imgCache = getImgCache();
-      enriched.forEach(function(item) { if (item.pic) imgCache[item.name] = item.pic; });
-      setImgCache(imgCache);
-      if (curCat === 0 && gen === _navGeneration) {
-        const hp = document.getElementById('homePage');
-        if (hp && hp.style.display !== 'none') {
-          // Update cards in-place instead of rebuilding entire page
-          var allCards = hp.querySelectorAll('.card');
-          allCards.forEach(function(card) {
-            var titleEl = card.querySelector('.card-title');
-            if (!titleEl) return;
-            var name = titleEl.textContent;
-            var matched = enriched.find(function(it) { return it.name === name; });
-            if (!matched || !matched.pic) return;
-            var poster = card.querySelector('.card-poster');
-            if (!poster) return;
-            var existingImg = poster.querySelector('img');
-            if (existingImg && existingImg.src) return; // already has image
-            var ph = poster.querySelector('.card-ph');
-            if (!ph) return;
-            var img = document.createElement('img');
-            img.src = proxyImg(matched.pic);
-            img.alt = (matched.name || name) + ' 海报';
-            img.loading = 'eager';
-            img.fetchPriority = 'high';
-            img.referrerPolicy = 'no-referrer';
-            img.style.opacity = '0';
-            img.style.transition = 'opacity 0.4s ease';
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-            img.style.display = 'block';
-            img.onload = function() { img.style.opacity = '1'; ph.style.display = 'none'; };
-            img.onerror = function() { img.style.display = 'none'; ph.style.display = 'flex'; };
-            poster.insertBefore(img, ph);
-            // Update onclick data
-            var d = JSON.stringify(matched).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
-            card.setAttribute('onclick', 'openPlayer('+d+')');
-            // Update remarks/episode badge
-            var epBadge = poster.querySelector('.card-ep');
-            if (matched.remarks) {
-              if (epBadge) { epBadge.textContent = matched.remarks; }
-              else { var eb = document.createElement('div'); eb.className = 'card-ep'; eb.textContent = matched.remarks; poster.appendChild(eb); }
-            }
-          });
-        }
-      }
-    } catch(e) {}
-  }
+    var total = shows.tv.length + shows.movie.length + shows.variety.length + shows.anime.length + shows.shortdrama.length;
+    if (total < 5) return; // API没拿到数据，保留静态列表即可
+    console.log('后台获取到最新热播数据:', total, '条，更新列表');
+    categories.forEach(function(cat, ci) {
+      var container = document.getElementById('catList_'+ci);
+      var countEl = document.getElementById('catCount_'+ci);
+      if (!container) return;
+      var names = shows[cat.key] || [];
+      if (names.length < 3) return; // 该分类没拿到新数据，保留静态的
+      if (countEl) countEl.textContent = names.length + '部热播';
+      container.innerHTML = names.slice(0, 60).map(function(name, i) {
+        var safe = name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        var cls = i < 3 ? ' name-top' : '';
+        return '<span class="name-item' + cls + '" onclick="doSearch(\'' + safe + '\')">'
+          + '<span class="ni-idx">' + (i+1) + '</span>' + esc(name) + '</span>';
+      }).join('');
+    });
+  }).catch(function(e) {
+    console.log('后台获取失败，保留静态列表:', e.message);
+  });
 }
+
 
 // === CATEGORY PAGE ===
 let _catPageNum = {};
 let _navGeneration = 0; // 导航版本号，防止异步竞态
-let _globalTrendingData = []; // 全局热播数据，支持无限追加
-let _trendingAutoLoadInterval = null; // 持续加载定时器
 
 function catPage(catName, page) {
   const items = _catCache[catName] ? _catCache[catName].data : [];
@@ -2758,13 +1492,7 @@ async function switchCat(idx) {
   const gen = ++_navGeneration; // 记录本次导航版本
   renderNav();
   if (idx === 0) { loadHome(); return; }
-  if (CATS[idx] === '排行榜') {
-    document.getElementById('searchPage').style.display = 'none';
-    document.getElementById('heroSection').style.display = 'none';
-    document.getElementById('filterBar').classList.remove('show');
-    renderRankPage(0);
-    return;
-  }
+  
   const catName = CATS[idx];
   renderFilterBar(catName);
   const hp = document.getElementById('homePage');
@@ -2773,7 +1501,7 @@ async function switchCat(idx) {
   document.getElementById('heroSection').style.display = 'none';
 
   // 立即用缓存数据渲染（含图片缓存预填充）
-  const curated = CURATED_HOT[catName] || [];
+  const curated = (_catCache[catName] && _catCache[catName].data) || [];
   const imgCache = getImgCache();
   curated.forEach(function(item) {
     if (!item.pic && imgCache[item.name]) item.pic = imgCache[item.name];
@@ -2794,7 +1522,6 @@ async function switchCat(idx) {
     if (!apiItems.length) return;
     const enriched = enrichWithApi(catName, curated, apiItems);
     _catCache[catName] = { data: enriched, ts: Date.now() };
-    CURATED_HOT[catName] = enriched;
     // Cache images
     const ic = getImgCache();
     enriched.forEach(function(item) { if (item.pic) ic[item.name] = item.pic; });
@@ -2917,12 +1644,6 @@ function updateCardImage(name, picUrl, matchedItem) {
   });
 }
 
-function enrichWithCache(catName, curated) {
-  const cache = _catCache[catName];
-  if (!cache || !cache.data.length) return curated;
-  return enrichWithApi(catName, curated, cache.data);
-}
-
 function enrichWithApi(catName, curated, apiItems) {
   const apiMap = {};
   const apiList = [];
@@ -2969,14 +1690,12 @@ function enrichWithApi(catName, curated, apiItems) {
 async function doSearch(keyword) {
   if (!keyword || !keyword.trim()) return;
   // 记录搜索前所在页面
-  if (CATS[curCat] === '排行榜') {
-    _searchFromPage = 'rank';
-  } else if (curCat > 0) {
+  if (curCat > 0) {
     _searchFromPage = 'cat';
   } else if (!_searchFromPage) {
     _searchFromPage = null;
   }
-  var _backLabel = _searchFromPage === 'rank' ? '返回排行榜' : _searchFromPage === 'cat' ? '返回' + CATS[curCat] : '返回首页';
+  var _backLabel = _searchFromPage === 'cat' ? '返回' + CATS[curCat] : '返回首页';
   var _backBtn = '<div class="sr-back" onclick="goBack()">&#8592; ' + _backLabel + '</div>';
   ++_navGeneration; // 搜索也算导航切换
   document.getElementById('heroInput').value = keyword;
@@ -3071,15 +1790,7 @@ function goHome() {
 }
 
 function goBack() {
-  if (_searchFromPage === 'rank') {
-    // 返回排行榜页
-    document.getElementById('searchPage').style.display = 'none';
-    document.getElementById('heroSection').style.display = 'none';
-    document.getElementById('filterBar').classList.remove('show');
-    curCat = CATS.indexOf('排行榜');
-    renderNav();
-    renderRankPage(curRankTab);
-  } else if (_searchFromPage === 'cat') {
+  if (_searchFromPage === 'cat') {
     // 返回分类页
     switchCat(curCat);
   } else {
@@ -4472,14 +3183,6 @@ function buildSuggestions(keyword, suggestId) {
       suggestions.push({text: h.name, tag: '历史', icon: '\u{1F550}'});
     }
   });
-  Object.values(CURATED_HOT).forEach(arr => {
-    arr.forEach(item => {
-      if (matchesAny(item.name) && !seen.has(item.name) && suggestions.length < 12) {
-        seen.add(item.name);
-        suggestions.push({text: item.name, tag: item.type||'', icon: '\u{1F3AC}'});
-      }
-    });
-  });
   HOT_WORDS.forEach(w => {
     if (matchesAny(w) && !seen.has(w) && suggestions.length < 12) {
       seen.add(w);
@@ -4668,8 +3371,8 @@ function resetSources() {
   var _shieldVisible = false;
 
   // --- Our own safe element IDs/classes ---
-  var SAFE_IDS = ['pauseAdShield','adBlockOverlay','uiDetectOverlay','adGuardTip','autoNextOverlay','autoNextTip','modalMask','modalBox','pSide','epList','playerArea','historyMask','settingsMask','heroSection','hotBar','filterBar','homePage','searchPage'];
-  var SAFE_SELECTORS = '.p-top,.p-side,.p-next-btn,.p-open-btn,.p-fs-btn,.p-back,.modal-mask,.header,.player-area,.history-panel,.p-pill,.p-ep,.card,.grid,.section,.footer,.hero,.nav,.hot-bar,.filter-bar,.suggest-wrap,.suggest-list';
+  var SAFE_IDS = ['pauseAdShield','adBlockOverlay','uiDetectOverlay','adGuardTip','autoNextOverlay','autoNextTip','modalMask','modalBox','pSide','epList','playerArea','historyMask','settingsMask','heroSection','filterBar','homePage','searchPage'];
+  var SAFE_SELECTORS = '.p-top,.p-side,.p-next-btn,.p-open-btn,.p-fs-btn,.p-back,.modal-mask,.header,.player-area,.history-panel,.p-pill,.p-ep,.card,.grid,.section,.footer,.hero,.nav,,.filter-bar,.suggest-wrap,.suggest-list';
 
   function isSafeElement(el) {
     if (!el) return false;
@@ -5731,10 +4434,6 @@ function updateFsBtn(){
 
 var _dpSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0];
 var _dpSpeedIdx = 2;
-function cycleDPSpeed() {
-  selectDPSpeed((_dpSpeedIdx + 1) % _dpSpeeds.length);
-}
-
 // === Override playerIframe to support direct mode ===
 var _origPlayerIframe = playerIframe;
 playerIframe = function(url) {
@@ -5923,8 +4622,8 @@ document.addEventListener('keydown', e => {
 
 loadUserSources();
 renderNav();
-// renderHot(); // Removed as per user request
-loadHome();
+loadHome(); // 页面加载时立即显示首页推荐列表
+
 
 // === 可爱浮动装饰 ===
 (function(){
@@ -5947,22 +4646,7 @@ loadHome();
 })();
 </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
 </body>
 </html>
