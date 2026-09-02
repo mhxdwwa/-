@@ -344,6 +344,12 @@ img{max-width:100%}
   #dpFsBtn svg{width:28px;height:28px}
 }
 
+/* iOS全屏降级样式 */
+.ios-fullscreen{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;z-index:99999!important;background:#000!important}
+.ios-fullscreen .player-area{position:fixed!important;inset:0!important}
+.ios-fullscreen .player-area iframe{width:100%!important;height:100%!important}
+.ios-fullscreen .p-top,.ios-fullscreen .p-side,.ios-fullscreen .p-open-btn,.ios-fullscreen .p-bottom-btns,.ios-fullscreen .dp-controls{z-index:100000!important}
+
 /* DIRECT PLAYER (HLS.js) */
 .direct-video{width:100%;height:100%;background:#000;outline:none}
 .dp-controls{position:fixed;bottom:0;left:0;right:0;z-index:225;background:linear-gradient(transparent,rgba(0,0,0,.9));padding:10px 16px 14px;display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -4721,13 +4727,49 @@ function toggleDPFullscreen() {
   var el = document.getElementById('modalBox');
   if(!el) el = document.getElementById('playerArea');
   if(!el) return;
+  
+  // 检测是否已全屏
   var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || document.mozFullScreenElement;
-  if(fsEl) {
-    forceExitAllFullscreen();
+  
+  // 检测iOS降级全屏状态
+  var isIosFs = el.classList.contains('ios-fullscreen');
+  
+  if(fsEl || isIosFs) {
+    // 退出全屏
+    if(fsEl) {
+      forceExitAllFullscreen();
+    }
+    if(isIosFs) {
+      el.classList.remove('ios-fullscreen');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+    }
   } else {
-    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen || el.mozRequestFullScreen).call(el);
-    startIframeFsWatch();
+    // 尝试标准全屏API
+    var fsApi = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen || el.mozRequestFullScreen;
+    if(fsApi) {
+      try {
+        fsApi.call(el);
+        startIframeFsWatch();
+      } catch(e) {
+        // 全屏API失败，使用CSS降级方案
+        enterIosFullscreen(el);
+      }
+    } else {
+      // 没有全屏API，使用CSS降级方案
+      enterIosFullscreen(el);
+    }
   }
+}
+
+// iOS/降级全屏方案
+function enterIosFullscreen(el) {
+  el.classList.add('ios-fullscreen');
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+  updateFsBtn();
 }
 
 // === 全屏退出修复：彻底解决退出视频全屏后网页仍然全屏的问题 ===
