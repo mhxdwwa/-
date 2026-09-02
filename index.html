@@ -4215,8 +4215,18 @@ let _dpUpdateTimer = null;
 let _currentM3u8Url = '';
 let _aggressiveBufferTimer = null;
 
-// Default to direct mode (直连模式) for fastest playback; user can override
-try { var _saved = localStorage.getItem('wyh_direct_mode'); _directMode = _saved === null ? true : _saved === '1'; } catch(e){ _directMode = true; }
+// Default mode: desktop uses direct mode (直连模式), mobile uses iframe mode (普通模式)
+// User can override via settings
+try {
+  var _saved = localStorage.getItem('wyh_direct_mode');
+  if (_saved !== null) {
+    _directMode = _saved === '1';
+  } else {
+    // Detect device type
+    var _isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    _directMode = !_isMobile;
+  }
+} catch(e){ _directMode = false; }
 
 function setDirectMode(on) {
   _directMode = on;
