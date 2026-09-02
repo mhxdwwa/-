@@ -490,10 +490,23 @@ img{max-width:100%}
   </div>
 </div>
 
+<!-- SETTINGS PASSWORD MODAL -->
+<div class="modal-mask" id="settingsPwdMask" onclick="if(event.target===this)closeSettingsPwd()" style="background:rgba(0,0,0,.6);backdrop-filter:blur(4px)">
+  <div class="history-panel" style="max-width:380px">
+    <div class="hist-head"><h3>⚙ 设置验证</h3><button onclick="closeSettingsPwd()">✕</button></div>
+    <div style="padding:24px 20px;text-align:center">
+      <p style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:16px">请输入设置密码</p>
+      <input type="password" id="settingsPwdInput" placeholder="请输入密码" style="width:100%;padding:12px 16px;border-radius:10px;background:rgba(255,200,160,.06);color:#fff;font-size:15px;border:1px solid var(--border);text-align:center;letter-spacing:2px" onkeydown="if(event.key==='Enter')verifySettingsPwd()">
+      <p id="settingsPwdError" style="color:#ff6b7a;font-size:13px;margin-top:10px;display:none">密码错误，请重试</p>
+    </div>
+    <div class="hist-foot"><button onclick="verifySettingsPwd()">确认进入</button></div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-mask" id="settingsMask" onclick="if(event.target===this)toggleSettings()" style="background:rgba(0,0,0,.6);backdrop-filter:blur(4px)">
   <div class="history-panel" id="settingsPanel" style="max-width:560px;max-height:85vh">
-    <div class="hist-head"><h3>⚙ 源管理设置</h3><button onclick="toggleSettings()">✕</button></div>
+    <div class="hist-head"><h3>⚙ 设置中心</h3><button onclick="toggleSettings()">✕</button></div>
     <div id="settingsContent" class="hist-list" style="padding:16px 20px"></div>
     <div class="hist-foot"><button onclick="resetSources()">恢复默认设置</button></div>
   </div>
@@ -1380,11 +1393,41 @@ const STATIC_FALLBACK_SHOWS = {
   shortdrama: ['闪婚老伴是豪门','闪婚后傅总马甲藏不住了','我在八零年代当后妈','裴总每天都想父凭子贵','重生之后我成了自己的情敌','离婚后前夫跪求复合','被渣后我闪婚了千亿总裁','夫人她马甲又轰动全城了','龙年大吉之衣锦还乡','哎呀皇后娘娘来打工','闪婚总裁契约妻','恰似寒光遇骄阳','陆总夫人她罪不至死','重生小娇妻','傅总夫人又把你拉黑了','前夫求饶夫人已经嫁人了','离婚后前总他追悔莫及','重生后我手撕了渣男一家','重生八零媳妇有点辣','天降萌宝总裁爹地超给力','一胎二宝总裁爹地请签收','隐婚蜜爱总裁老公超宠的','重生后我成了权臣的掌中娇','闪婚蜜爱总裁老公宠上天','离婚后前夫他追悔莫及','重生后我嫁给了前夫的叔叔','重生之我在后宫当团宠','重生后我成了皇帝的白月光','重生后我成了太子的掌心宠','重生后我成了王爷的白月光']
 };
 
-// === 后台获取最新热播数据（从API源获取，失败则用静态列表） ===
+// === 从 shows.json 加载剧名列表（GitHub 仓库中的独立文件） ===
+var _loadedShows = null; // 缓存从 shows.json 加载的数据
+async function loadShowsFromJson() {
+  if (_loadedShows) return _loadedShows;
+  try {
+    const resp = await fetch('shows.json', { cache: 'no-cache' });
+    if (resp.ok) {
+      const data = await resp.json();
+      _loadedShows = data;
+      return data;
+    }
+  } catch(e) {
+    console.log('shows.json 加载失败，使用默认列表');
+  }
+  return null;
+}
+
+// === 后台获取最新热播数据（优先用 shows.json，失败则从API获取，最后用静态列表） ===
 async function fetchHotShowsByCategory() {
   var result = { tv: [], movie: [], variety: [], anime: [], shortdrama: [] };
   var catMap = { tv: '电视剧', movie: '电影', variety: '综艺', anime: '动漫', shortdrama: '短剧' };
+  
+  // 优先从 shows.json 加载
+  var jsonShows = await loadShowsFromJson();
+  if (jsonShows) {
+    Object.keys(catMap).forEach(function(key) {
+      if (jsonShows[key] && jsonShows[key].length > 0) {
+        result[key] = jsonShows[key];
+      }
+    });
+  }
+  
+  // 对于 shows.json 中没有或为空的分类，从API获取
   var tasks = Object.keys(catMap).map(async function(key) {
+    if (result[key] && result[key].length > 0) return; // 已有数据，跳过
     try {
       var catName = catMap[key];
       var items = await apiLoadCatFull(catName);
@@ -1394,6 +1437,7 @@ async function fetchHotShowsByCategory() {
     } catch(e) {}
   });
   await Promise.all(tasks);
+  
   // 对任何没有拿到数据的分类，使用静态列表兜底
   Object.keys(result).forEach(function(key) {
     if (!result[key] || result[key].length < 3) {
@@ -1420,10 +1464,11 @@ async function loadHome() {
     { key: 'shortdrama', name: '短剧热播', logo: '短剧', cls: 'plat-shortdrama', catIdx: -1 }
   ];
 
-  // === 第一步：立刻渲染静态剧名列表（不转圈，不等网络）===
+  // === 第一步：立刻渲染剧名列表（优先从 shows.json 加载）===
   var html = '<div style="margin-bottom:8px;font-size:13px;color:var(--sub);text-align:center;padding:8px 0 16px">点击剧名即可搜索播放</div>';
+  var jsonShows = await loadShowsFromJson();
   categories.forEach(function(cat, ci) {
-    var names = STATIC_FALLBACK_SHOWS[cat.key] || [];
+    var names = (jsonShows && jsonShows[cat.key]) || STATIC_FALLBACK_SHOWS[cat.key] || [];
     html += '<div class="platform-section" id="catSec_'+ci+'">'
       + '<div class="platform-header">'
       + '<span class="platform-logo '+cat.cls+'">'+cat.logo+'</span>'
@@ -3302,27 +3347,366 @@ function saveUserSources() {
   try { localStorage.setItem('wyh_custom_sources', JSON.stringify({ apis: customApis, players: customPlayers, removedApis, removedPlayers })); } catch(e) {}
 }
 
+// === SETTINGS PASSWORD PROTECTION ===
+function getSettingsPassword() {
+  try { return localStorage.getItem('wyh_settings_pwd') || '111111'; } catch(e) { return '111111'; }
+}
+function setSettingsPassword(pwd) {
+  try { localStorage.setItem('wyh_settings_pwd', pwd); } catch(e) {}
+}
+
 function toggleSettings() {
   const m = document.getElementById('settingsMask');
-  const show = !m.classList.contains('show');
-  m.classList.toggle('show', show);
-  if (show) renderSettings();
+  const pwdModal = document.getElementById('settingsPwdMask');
+  // If settings is already open, close it
+  if (m.classList.contains('show')) {
+    m.classList.remove('show');
+    return;
+  }
+  // Show password modal
+  pwdModal.classList.add('show');
+  document.getElementById('settingsPwdInput').value = '';
+  document.getElementById('settingsPwdError').style.display = 'none';
+  setTimeout(() => document.getElementById('settingsPwdInput').focus(), 100);
+}
+
+function closeSettingsPwd() {
+  document.getElementById('settingsPwdMask').classList.remove('show');
+}
+
+function verifySettingsPwd() {
+  const input = document.getElementById('settingsPwdInput').value;
+  const correctPwd = getSettingsPassword();
+  if (input === correctPwd) {
+    closeSettingsPwd();
+    const m = document.getElementById('settingsMask');
+    m.classList.add('show');
+    renderSettings();
+  } else {
+    document.getElementById('settingsPwdError').style.display = 'block';
+    document.getElementById('settingsPwdInput').value = '';
+    document.getElementById('settingsPwdInput').focus();
+  }
+}
+
+function changeSettingsPassword() {
+  const oldPwd = document.getElementById('oldPwdInput').value;
+  const newPwd = document.getElementById('newPwdInput').value;
+  const confirmPwd = document.getElementById('confirmPwdInput').value;
+  if (oldPwd !== getSettingsPassword()) {
+    showAutoNextTip('原密码错误');
+    return;
+  }
+  if (!newPwd || newPwd.length < 4) {
+    showAutoNextTip('新密码至少4位');
+    return;
+  }
+  if (newPwd !== confirmPwd) {
+    showAutoNextTip('两次密码不一致');
+    return;
+  }
+  setSettingsPassword(newPwd);
+  showAutoNextTip('密码修改成功');
+  renderSettings();
+}
+
+// === 剧名管理（shows.json + GitHub API） ===
+
+// GitHub Token 管理
+function getGitHubToken() {
+  try { return localStorage.getItem('wyh_github_token') || ''; } catch(e) { return ''; }
+}
+function setGitHubToken(token) {
+  try { localStorage.setItem('wyh_github_token', token); } catch(e) {}
+}
+function getGitHubRepo() {
+  try { return localStorage.getItem('wyh_github_repo') || 'mhxdwwa/-'; } catch(e) { return 'mhxdwwa/-'; }
+}
+function setGitHubRepo(repo) {
+  try { localStorage.setItem('wyh_github_repo', repo); } catch(e) {}
+}
+
+// 通过 GitHub API 保存 shows.json
+async function saveShowsToGitHub() {
+  const token = getGitHubToken();
+  if (!token) {
+    showAutoNextTip('请先配置 GitHub Token');
+    return;
+  }
+  
+  // 收集所有剧名
+  const shows = {};
+  ['tv', 'movie', 'variety', 'anime', 'shortdrama'].forEach(key => {
+    const textarea = document.getElementById('shows_' + key);
+    if (textarea) {
+      const names = textarea.value.split('\n').map(s => s.trim()).filter(Boolean);
+      shows[key] = names;
+    }
+  });
+  
+  const repo = getGitHubRepo();
+  const [owner, repoName] = repo.split('/');
+  const filePath = 'shows.json';
+  const content = JSON.stringify(shows, null, 2);
+  const base64Content = btoa(unescape(encodeURIComponent(content)));
+  
+  const saveBtn = document.getElementById('saveShowsBtn');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '保存中...';
+  }
+  
+  try {
+    // 先获取文件的 SHA（用于更新）
+    const getUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`;
+    const getResp = await fetch(getUrl, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    let sha = null;
+    if (getResp.ok) {
+      const getData = await getResp.json();
+      sha = getData.sha;
+    }
+    
+    // 创建或更新文件
+    const putUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`;
+    const putBody = {
+      message: 'Update shows.json - 更新剧名列表',
+      content: base64Content,
+    };
+    if (sha) {
+      putBody.sha = sha;
+    }
+    
+    const putResp = await fetch(putUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(putBody)
+    });
+    
+    if (putResp.ok) {
+      // 更新本地缓存
+      _loadedShows = shows;
+      showAutoNextTip('保存成功！所有用户刷新页面即可看到更新');
+      renderSettings();
+    } else {
+      const errData = await putResp.json();
+      const errMsg = errData.message || '保存失败';
+      if (putResp.status === 401) {
+        showAutoNextTip('Token 无效或已过期，请重新配置');
+      } else if (putResp.status === 403) {
+        showAutoNextTip('权限不足，请检查 Token 权限');
+      } else {
+        showAutoNextTip('保存失败：' + errMsg);
+      }
+    }
+  } catch(e) {
+    showAutoNextTip('网络错误：' + e.message);
+  }
+  
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 保存到 GitHub（所有人立即生效）';
+  }
+}
+
+// 测试 GitHub Token 连接
+async function testGitHubToken() {
+  const token = document.getElementById('githubTokenInput').value.trim();
+  const repo = document.getElementById('githubRepoInput').value.trim();
+  
+  if (!token) {
+    showAutoNextTip('请输入 Token');
+    return;
+  }
+  if (!repo || !repo.includes('/')) {
+    showAutoNextTip('仓库格式错误，应为：用户名/仓库名');
+    return;
+  }
+  
+  const testBtn = document.getElementById('testTokenBtn');
+  if (testBtn) {
+    testBtn.disabled = true;
+    testBtn.textContent = '测试中...';
+  }
+  
+  try {
+    const [owner, repoName] = repo.split('/');
+    const url = `https://api.github.com/repos/${owner}/${repoName}/contents/shows.json`;
+    const resp = await fetch(url, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (resp.ok) {
+      setGitHubToken(token);
+      setGitHubRepo(repo);
+      showAutoNextTip('连接成功！Token 已保存');
+      renderSettings();
+    } else if (resp.status === 401) {
+      showAutoNextTip('Token 无效，请检查');
+    } else if (resp.status === 404) {
+      showAutoNextTip('仓库不存在或无权访问');
+    } else {
+      const data = await resp.json();
+      showAutoNextTip('连接失败：' + (data.message || '未知错误'));
+    }
+  } catch(e) {
+    showAutoNextTip('网络错误：' + e.message);
+  }
+  
+  if (testBtn) {
+    testBtn.disabled = false;
+    testBtn.textContent = '测试连接';
+  }
 }
 
 function renderSettings() {
   const el = document.getElementById('settingsContent');
   let html = '';
-  html += '<div class="settings-section"><h4>资源站 <span>('+API_SOURCES.length+'个)</span></h4>';
+  const hasToken = !!getGitHubToken();
+  const currentToken = getGitHubToken();
+  const currentRepo = getGitHubRepo();
+  
+  // === 1. GitHub Token 配置 ===
+  html += '<div class="settings-section"><h4>🔑 GitHub 连接 <span>('+ (hasToken ? '<span style="color:#4caf50">已连接</span>' : '<span style="color:#ff6b7a">未配置</span>') +')</span></h4>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;line-height:1.6">';
+  html += '配置后无需每次输入，Token 仅保存在你的浏览器中。';
+  html += '<br>获取 Token：GitHub → Settings → Developer settings → Personal access tokens → Generate new token（勾选 repo 权限）';
+  html += '</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px">';
+  html += '<input type="password" id="githubTokenInput" placeholder="GitHub Personal Access Token" value="'+(currentToken ? currentToken : '')+'" style="padding:10px 14px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:13px;border:1px solid var(--border);font-family:monospace">';
+  html += '<input type="text" id="githubRepoInput" placeholder="仓库地址（如 mhxdwwa/-）" value="'+currentRepo+'" style="padding:10px 14px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:13px;border:1px solid var(--border)">';
+  html += '<div style="display:flex;gap:8px">';
+  html += '<button id="testTokenBtn" onclick="testGitHubToken()" style="padding:8px 16px;border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-size:13px;border:1px solid rgba(255,255,255,.2)">测试连接</button>';
+  if (hasToken) {
+    html += '<button onclick="clearGitHubToken()" style="padding:8px 16px;border-radius:6px;background:rgba(255,107,107,.2);color:#ff6b7a;font-size:13px;border:1px solid rgba(255,107,107,.3)">清除 Token</button>';
+  }
+  html += '</div></div></div>';
+  
+  // === 2. 密码修改 ===
+  html += '<div class="settings-section"><h4>🔐 修改设置密码</h4>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;padding:8px 0">';
+  html += '<input type="password" id="oldPwdInput" placeholder="原密码" style="padding:10px 14px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:14px;border:1px solid var(--border)">';
+  html += '<input type="password" id="newPwdInput" placeholder="新密码（至少4位）" style="padding:10px 14px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:14px;border:1px solid var(--border)">';
+  html += '<input type="password" id="confirmPwdInput" placeholder="确认新密码" style="padding:10px 14px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:14px;border:1px solid var(--border)">';
+  html += '<button onclick="changeSettingsPassword()" style="padding:10px 16px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;align-self:flex-start">修改密码</button>';
+  html += '</div></div>';
+  
+  // === 3. 剧名管理（shows.json） ===
+  html += '<div class="settings-section"><h4>📝 剧名管理 <span>（首页热播列表）</span></h4>';
+  
+  if (!hasToken) {
+    html += '<div style="font-size:13px;color:#ff6b7a;background:rgba(255,107,107,.1);padding:12px;border-radius:8px;border-left:3px solid #ff6b7a;line-height:1.6">';
+    html += '⚠ 请先配置 GitHub Token 才能保存剧名。配置后你在网页里改的剧名会直接同步到 GitHub，所有人立刻看到更新。';
+    html += '</div>';
+  } else {
+    html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;line-height:1.6;background:rgba(76,175,80,.08);padding:12px;border-radius:8px;border-left:3px solid #4caf50">';
+    html += '✅ 已连接 GitHub，编辑剧名后点击「保存」即可同步到仓库，所有用户刷新页面立刻看到更新。';
+    html += '</div>';
+  }
+  
+  const catKeys = ['tv', 'movie', 'variety', 'anime', 'shortdrama'];
+  const catNames = ['电视剧', '电影', '综艺', '动漫', '短剧'];
+  const currentShows = _loadedShows || STATIC_FALLBACK_SHOWS;
+  
+  catKeys.forEach((key, idx) => {
+    const names = currentShows[key] || [];
+    html += '<div style="margin-bottom:16px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    html += '<span style="font-size:14px;font-weight:600;color:#fff">'+catNames[idx]+'</span>';
+    html += '<span style="font-size:11px;color:var(--sub)">('+names.length+'部)</span>';
+    html += '</div>';
+    html += '<textarea id="shows_'+key+'" rows="5" style="width:100%;padding:10px 12px;border-radius:8px;background:rgba(255,200,160,.06);color:#fff;font-size:13px;border:1px solid var(--border);resize:vertical;line-height:1.5;font-family:monospace" placeholder="每行一个剧名...">'+names.join('\n')+'</textarea>';
+    html += '</div>';
+  });
+  
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">';
+  if (hasToken) {
+    html += '<button id="saveShowsBtn" onclick="saveShowsToGitHub()" style="padding:10px 20px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600">💾 保存到 GitHub（所有人立即生效）</button>';
+  }
+  html += '<button onclick="exportShowsJson()" style="padding:10px 20px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:14px;border:1px solid rgba(255,255,255,.2)">导出 shows.json</button>';
+  html += '<button onclick="document.getElementById(\'importShowsJsonFile\').click()" style="padding:10px 20px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:14px;border:1px solid rgba(255,255,255,.2)">导入 shows.json</button>';
+  html += '<input type="file" id="importShowsJsonFile" accept=".json" style="display:none" onchange="importShowsJson(this)">';
+  html += '</div>';
+  html += '</div>';
+  
+  // === 4. 源管理设置 ===
+  html += '<div class="settings-section"><h4>📡 资源站 <span>('+API_SOURCES.length+'个)</span></h4>';
   API_SOURCES.forEach((s, i) => {
     html += '<div class="src-item"><span class="src-name">'+esc(s.name)+'</span><span class="src-url" title="'+esc(s.api)+'">'+esc(s.api)+'</span><span class="src-del" onclick="removeSource(\'api\','+i+')">删除</span></div>';
   });
   html += '<div class="src-add-form"><input id="newSrcName" placeholder="名称" style="max-width:80px"><input id="newSrcUrl" placeholder="API地址 (如 https://xxx.com/api.php/provide/vod/)"><button onclick="addSource(\'api\')">添加</button></div></div>';
-  html += '<div class="settings-section"><h4>解析线路 <span>('+PLAYERS.length+'条)</span></h4>';
+  html += '<div class="settings-section"><h4>🔗 解析线路 <span>('+PLAYERS.length+'条)</span></h4>';
   PLAYERS.forEach((p, i) => {
     html += '<div class="src-item"><span class="src-name">'+esc(p.name)+'</span><span class="src-url" title="'+esc(p.url)+'">'+esc(p.url)+'</span><span class="src-del" onclick="removeSource(\'player\','+i+')">删除</span></div>';
   });
   html += '<div class="src-add-form"><input id="newPlayerName" placeholder="名称" style="max-width:80px"><input id="newPlayerUrl" placeholder="解析地址 (如 https://jx.xxx.com/?url=)"><button onclick="addSource(\'player\')">添加</button></div></div>';
+  
   el.innerHTML = html;
+}
+
+function clearGitHubToken() {
+  localStorage.removeItem('wyh_github_token');
+  localStorage.removeItem('wyh_github_repo');
+  showAutoNextTip('已清除 GitHub Token');
+  renderSettings();
+}
+
+// 导出完整的 shows.json 文件
+function exportShowsJson() {
+  const shows = {};
+  ['tv', 'movie', 'variety', 'anime', 'shortdrama'].forEach(key => {
+    const textarea = document.getElementById('shows_' + key);
+    if (textarea) {
+      const names = textarea.value.split('\n').map(s => s.trim()).filter(Boolean);
+      shows[key] = names;
+    }
+  });
+  const jsonStr = JSON.stringify(shows, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'shows.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showAutoNextTip('shows.json 已下载');
+}
+
+// 导入 shows.json 文件预览
+function importShowsJson(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      ['tv', 'movie', 'variety', 'anime', 'shortdrama'].forEach(key => {
+        const textarea = document.getElementById('shows_' + key);
+        if (textarea && data[key] && Array.isArray(data[key])) {
+          textarea.value = data[key].join('\n');
+        }
+      });
+      showAutoNextTip('已导入，可编辑后点击「保存」同步到 GitHub');
+    } catch(err) {
+      showAutoNextTip('文件格式错误，请确保是有效的 JSON 文件');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 function addSource(type) {
@@ -3371,7 +3755,7 @@ function resetSources() {
   var _shieldVisible = false;
 
   // --- Our own safe element IDs/classes ---
-  var SAFE_IDS = ['pauseAdShield','adBlockOverlay','uiDetectOverlay','adGuardTip','autoNextOverlay','autoNextTip','modalMask','modalBox','pSide','epList','playerArea','historyMask','settingsMask','heroSection','filterBar','homePage','searchPage'];
+  var SAFE_IDS = ['pauseAdShield','adBlockOverlay','uiDetectOverlay','adGuardTip','autoNextOverlay','autoNextTip','modalMask','modalBox','pSide','epList','playerArea','historyMask','settingsMask','settingsPwdMask','heroSection','filterBar','homePage','searchPage'];
   var SAFE_SELECTORS = '.p-top,.p-side,.p-next-btn,.p-open-btn,.p-fs-btn,.p-back,.modal-mask,.header,.player-area,.history-panel,.p-pill,.p-ep,.card,.grid,.section,.footer,.hero,.nav,,.filter-bar,.suggest-wrap,.suggest-list';
 
   function isSafeElement(el) {
@@ -4606,7 +4990,7 @@ document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
     var fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
     if(fsEl){ (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document); return; }
-    closePlayer();cancelAutoNextCountdown();document.getElementById('historyMask').classList.remove('show');document.getElementById('settingsMask').classList.remove('show');
+    closePlayer();cancelAutoNextCountdown();document.getElementById('historyMask').classList.remove('show');document.getElementById('settingsMask').classList.remove('show');document.getElementById('settingsPwdMask').classList.remove('show');
   }
   // Direct player keyboard shortcuts
   if(_directMode && _hlsVideo){
