@@ -451,8 +451,7 @@ img{max-width:100%}
   <p class="hero-subtitle"></p>
   <div class="suggest-wrap">
     <div class="hero-search">
-      <input type="text" style="position:absolute;left:-9999px;top:-9999px;width:0;height:0;opacity:0" tabindex="-1" aria-hidden="true" autocomplete="email" value="">
-      <input type="search" id="heroInput" name="hero_search_q" placeholder="输入影片名称..." autocomplete="nopemail" autocorrect="off" autocapitalize="off" spellcheck="false" readonly
+      <input type="search" id="heroInput" name="hero_search_q" placeholder="输入影片名称..." autocomplete="nopemail" autocorrect="off" autocapitalize="off" spellcheck="false"
         oninput="onSearchInput(this.value,'heroSuggest')"
         onclick="onSearchInput(this.value,'heroSuggest')"
         onkeydown="onSearchKeydown(event,'heroSuggest')"
@@ -464,17 +463,18 @@ img{max-width:100%}
   </div>
 </div>
 <script>
-// 防止浏览器自动填充邮箱到搜索框
+// 防止360登录管家等扩展自动填充邮箱到搜索框
 (function(){
-  function unlockSearch(){
-    var input=document.getElementById('heroInput');
-    if(input){
-      input.value='';
-      input.removeAttribute('readonly');
-    }
-  }
-  setTimeout(unlockSearch,300);
-  window.addEventListener('load',function(){setTimeout(unlockSearch,300);});
+  var emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  var input=document.getElementById('heroInput');
+  if(!input) return;
+  var cleared=false;
+  var timer=setInterval(function(){
+    if(cleared){clearInterval(timer);return;}
+    if(document.activeElement===input){cleared=true;clearInterval(timer);return;}
+    if(input.value&&emailRe.test(input.value)){input.value='';}
+  },50);
+  setTimeout(function(){clearInterval(timer);},5000);
 })();
 </script>
 
