@@ -287,6 +287,14 @@ function stripAdSegments(playlist) {
     if (s.brLine >= 0) drop.add(s.brLine);
   });
   if (!removed) return { text: lines.join('\n'), removed: 0 };
+
+  // 安全阀：有些源把整片按 ~25 秒一段打散并塞满断点（如 ffzy 的 mixed.m3u8），
+  // 判据会连带把正片整段剪掉。实测出现过 265/352 段被误判，宁可带广告也不能剪没。
+  const removedDur = segs.filter((s) => s.ad).reduce((a, s) => a + (s.dur || 0), 0);
+  if (removed > segs.length * 0.18 || removedDur > 100) {
+    return { text: lines.join('\n'), removed: 0, skipped: true, wouldRemove: removed };
+  }
+
   const kept = lines.filter((_, i) => !drop.has(i));
 
   // 广告岛两头各有一条 #EXT-X-DISCONTINUITY，挖掉中间后会连着两条。
