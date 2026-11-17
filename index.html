@@ -4218,19 +4218,96 @@ let _aggressiveBufferTimer = null;
 
 // ============================================================
 // 自建中转（Cloudflare Worker）
-// 部署 worker.js 之后，把 RELAY_BASE 换成你的 Worker 域名，例如：
-//   var RELAY_BASE = 'https://vrelay.abc123.workers.dev';
-// 留空 = 不走中转，退化成「直连 → 解析线路」两级。
-// 填上之后播放顺序变为：直连 → 中转 → 解析线路（解析线路仅作最后兜底）
+// 播放顺序：直连 → 中转 → 解析线路（解析线路仅作最后兜底）
+// 中转层负责：补 CORS / 伪装 Referer / 重写分片地址 / 剥广告 / 边缘缓存
 // ============================================================
-var RELAY_BASE = '';
+// 中转地址的取值顺序（都不用改代码）：
+//   1. 网址加 ?relay=https://xxx.workers.dev   —— 当场设置并记住
+//   2. 上次记住的值（localStorage）
+//   3. 仓库根目录的 relay.txt 里第一行 http(s) 地址
+// 三个都没有 = 不走中转，退化成「直连 → 解析线路」两级。
+var RELAY_BASE = (function () {
+  var qs = '';
+  try {
+    var m = /[?&]relay=([^&#]+)/.exec(location.search);
+    if (m) {
+      var v = decodeURIComponent(m[1]);
+      if (/^https?:\/\//i.test(v)) { qs = v; try { localStorage.setItem('wyh_relay_base', v); } catch (e) {} }
+    }
+    if (qs) return qs.replace(/\/+$/, '');
+    var saved = '';
+    try { saved = localStorage.getItem('wyh_relay_base') || ''; } catch (e) {}
+    if (/^https?:\/\//i.test(saved)) return saved.replace(/\/+$/, '');
+    // relay.txt 极小，同步读一下，保证播放前就绪
+    var x = new XMLHttpRequest();
+    x.open('GET', 'relay.txt?_=' + Date.now(), false);
+    x.send(null);
+    if (x.status >= 200 && x.status < 300) {
+      var hit = '';
+      (x.responseText || '').split(/\r?\n/).some(function (ln) {
+        var t = ln.trim();
+        if (/^https?:\/\//i.test(t)) { hit = t.split(/\s+/)[0]; return true; }
+        return false;
+      });
+      if (hit) { try { localStorage.setItem('wyh_relay_base', hit); } catch (e) {} return hit.replace(/\/+$/, ''); }
+    }
+  } catch (e) {}
+  return '';
+})();
+
 var _relayAttempted = false;
 var _curSrcUrl = '';
+
+// 强制走中转：网址加 ?force=1 打开（会记住），?force=0 关掉。
+// 有些源本身就允许跨域，直连能成功，但直连不经过中转 = 广告不会被剥。
+var _forceRelay = (function () {
+  try {
+    if (/[?&]force=1(&|$)/.test(location.search)) { localStorage.setItem('wyh_force_relay', '1'); return true; }
+    if (/[?&]force=0(&|$)/.test(location.search)) { localStorage.setItem('wyh_force_relay', '0'); return false; }
+    return localStorage.getItem('wyh_force_relay') === '1';
+  } catch (e) { return false; }
+})();
+
+try {
+  console.log('[中转] ' + (RELAY_BASE
+    ? '已启用 ' + RELAY_BASE + (_forceRelay ? '（强制模式，能直连也走中转）' : '')
+    : '未配置 —— 把 Worker 域名写进仓库根目录 relay.txt，或在本页地址后加 ?relay=https://你的.workers.dev'));
+} catch (e) {}
 
 function relayUrl(u) {
   if (!RELAY_BASE || !u) return u;
   return RELAY_BASE.replace(/\/+$/, '') + '/p?u=' + encodeURIComponent(u);
 }
+
+// 一键体检：播放任意一集 → F12 → 输入 tcInspect() 回车
+// 作用：把当前这集的 m3u8 拆开看，判断那 15 秒广告是「独立分片」（能删）还是
+//       已经混进正片分片里（删不掉，只能换线路或跳过）
+window.tcInspect = function (u) {
+  var target = u || _curSrcUrl || _currentM3u8Url;
+  if (!target) {
+    console.warn('[体检] 先播一集，或者自己传地址进来：tcInspect("https://xxx/index.m3u8")');
+    return '';
+  }
+  if (!RELAY_BASE) {
+    console.warn('[体检] RELAY_BASE 还是空的 —— 先把 Worker 域名填进 index.html');
+    return '';
+  }
+  var box = RELAY_BASE.replace(/\/+$/, '') + '/inspect?u=' + encodeURIComponent(target);
+  console.log('[体检] ' + box);
+  fetch(box).then(function (r) { return r.json(); }).then(function (d) {
+    console.log('[体检] 原始结果', d);
+    if (d.kind === 'master') {
+      console.warn('[体检] 这是多码率主清单，广告不在里面。把其中一条子清单地址再查一次。');
+      return;
+    }
+    if (d.error) { console.warn('[体检] 上游没返回 m3u8：' + d.error); return; }
+    console.log('%c判定：' + d.verdict, 'font-size:14px;font-weight:700;color:' + (d.suspectCount ? '#e0413a' : '#7a8699'));
+    console.log('段数 ' + d.segments + ' · 总时长 ' + d.totalDuration + 's · 断点 ' + d.discontinuities
+      + ' · 正片段长中位数 ' + d.medianSegDur + 's · 可疑 ' + d.suspectCount + ' 段');
+    if (d.suspects && d.suspects.length) console.table(d.suspects.slice(0, 30));
+  }).catch(function (e) { console.warn('[体检] 请求失败：' + e.message + '（多半是 Worker 没部署或域名填错）'); });
+  return box;
+};
 
 // 播放通道角标：让用户一眼看到这集是怎么播出来的
 function setChannelBadge(text, danger) {
@@ -4353,6 +4430,7 @@ function initDirectPlayer(url) {
   _curSrcUrl = url;          // 原始地址，中转失败时回退解析线路要用它
   _relayAttempted = false;
   _currentM3u8Url = url;
+  try { console.log('[播放源] ' + url + '\n[提示] 想查这集的广告能不能删，输入 tcInspect()'); } catch (e) {}
   const video = document.getElementById('dpVideo');
   if(!video) return;
   _hlsVideo = video;
@@ -4520,8 +4598,15 @@ function initDirectPlayer(url) {
   }
 
   if(isM3u8 && typeof Hls !== 'undefined' && Hls.isSupported()) {
-    setChannelBadge('直连');
-    _createHls(url, false);
+    if (RELAY_BASE && _forceRelay) {
+      // 强制中转：广告剥离只在这一层发生
+      _relayAttempted = true;
+      setChannelBadge('中转');
+      _createHls(relayUrl(url), true);
+    } else {
+      setChannelBadge('直连');
+      _createHls(url, false);
+    }
   } else if(isM3u8 && video.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari native HLS
     video.src = url;
