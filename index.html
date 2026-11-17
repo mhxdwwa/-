@@ -964,10 +964,22 @@ function relayApiFetch(u) {
   });
 }
 
+// 同源中转：Worker 和站点同域时直接可用（worker.js 的 /api 路由），不必配 relay.txt
+function sameOriginApiFetch(u) {
+  return fetch('/api?u=' + encodeURIComponent(u), { signal: AbortSignal.timeout(6000) })
+    .then(function (r) {
+      if (!r.ok) throw new Error('same-origin ' + r.status);
+      var ct = r.headers.get('content-type') || '';
+      if (ct.indexOf('json') < 0) throw new Error('not json');
+      return r.json();
+    });
+}
+
 async function apiFetch(url) {
   try {
     const d = await Promise.any([
       relayApiFetch(url),
+      sameOriginApiFetch(url),
       jpFetch(jpEchoUrl(url), 10000),
       jpFetch(url, 3500),
       proxyFetch(url).then(d => { if (!d) throw new Error('empty'); return d; }),
