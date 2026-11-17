@@ -427,11 +427,63 @@ export default {
           '/                       体检页面（粘 m3u8 就能看广告能不能删）',
           '/p?u=<encodeURIComponent(源地址)>      播放与分片转发',
           '/inspect?u=<encodeURIComponent(m3u8)>  清单体检（JSON）',
+          '/api?u=<encodeURIComponent(接口)>      采集接口中转（带 CORS，首页实时数据用）',
           '',
           '广告剥离默认开启，加 &ads=0 可关闭',
         ].join('\n'),
         { headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders('*') } }
       );
+    }
+
+    /* ---------------- 采集接口中转（首页实时数据） ---------------- */
+    // 采集站的 api.php 不返回 Access-Control-Allow-Origin，浏览器直接 fetch 必被拦；
+    // 走这里带上 CORS 头转发一次，页面就能拿到 JSON。
+    if (url.pathname === '/api') {
+      const apiTarget = url.searchParams.get('u');
+      const j = (obj, status) =>
+        new Response(JSON.stringify(obj), {
+          status: status || 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders('*') },
+        });
+      if (!apiTarget) return j({ error: 'missing u' }, 400);
+      let at;
+      try {
+        at = new URL(apiTarget);
+      } catch (e) {
+        return j({ error: 'bad url' }, 400);
+      }
+      if (at.protocol !== 'http:' && at.protocol !== 'https:') return j({ error: 'protocol not allowed' }, 400);
+
+      const cache = caches.default;
+      const ckey = new Request(origin + '/api?u=' + encodeURIComponent(apiTarget), { method: 'GET' });
+      const cached = await cache.match(ckey);
+      if (cached) return cached;
+
+      let up;
+      try {
+        up = await fetchUpstream(apiTarget, request);
+      } catch (e) {
+        return j({ error: 'upstream fetch failed: ' + e.message }, 502);
+      }
+      if (!up.ok) return j({ error: 'upstream ' + up.status }, 502);
+
+      const body = await up.text();
+      let parsed = null;
+      try {
+        parsed = JSON.parse(body);
+      } catch (e) {
+        return j({ error: 'upstream not json', head: body.slice(0, 200) }, 502);
+      }
+
+      const res = new Response(JSON.stringify(parsed), {
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=120',
+          ...corsHeaders('*'),
+        },
+      });
+      ctx.waitUntil(cache.put(ckey, res.clone()));
+      return res;
     }
 
     const isInspect = url.pathname === '/inspect';
