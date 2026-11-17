@@ -242,6 +242,58 @@ function isMaster(text) {
 }
 
 /* =========================================================
+   Worker 自带的体检页面：打开域名根路径就是一个输入框，
+   粘 m3u8 地址点一下就出结果。不用改站点、不用手动编码。
+   ========================================================= */
+const UI_HTML = [
+  '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">',
+  '<meta name="viewport" content="width=device-width,initial-scale=1">',
+  '<title>闯哥影视 · 广告体检</title><style>',
+  '*{box-sizing:border-box}body{margin:0;padding:24px;font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#f6f7f9;color:#1c2024}',
+  '.wrap{max-width:860px;margin:0 auto}h1{font-size:19px;margin:0 0 4px}p.sub{margin:0 0 18px;color:#6b7280;font-size:13px}',
+  'textarea{width:100%;height:76px;padding:11px 13px;border:1px solid #d6dae0;border-radius:10px;font:13px/1.5 ui-monospace,Consolas,monospace;resize:vertical;background:#fff}',
+  'textarea:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}',
+  'button{margin-top:10px;height:38px;padding:0 20px;border:0;border-radius:9px;background:#1c2024;color:#fff;font-size:14px;font-weight:600;cursor:pointer}',
+  'button:disabled{opacity:.5;cursor:default}',
+  '.card{background:#fff;border:1px solid #e5e8ec;border-radius:12px;padding:16px 18px;margin-top:16px}',
+  '.verdict{font-weight:700;font-size:15px}.ok{color:#0f7b4f}.warn{color:#b4530a}.bad{color:#c03028}',
+  '.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:14px}',
+  '.kv div{background:#f8f9fb;border-radius:8px;padding:9px 11px}.kv b{display:block;font-size:17px}.kv span{color:#6b7280;font-size:12px}',
+  'table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}',
+  'th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef0f3;word-break:break-all}',
+  'th{color:#6b7280;font-weight:600}code{background:#f1f3f6;padding:1px 5px;border-radius:4px;font-size:12px}',
+  '.hint{margin-top:14px;font-size:12.5px;color:#6b7280;line-height:1.7}',
+  '</style></head><body><div class="wrap">',
+  '<h1>广告体检</h1>',
+  '<p class="sub">把这一集的 m3u8 地址粘进来。地址从 F12 → Network 里筛 <code>m3u8</code> 拿，或者直接看控制台打印的 <code>[播放源]</code>。</p>',
+  '<textarea id="u" placeholder="https://xxx.com/20250101/abcd/index.m3u8"></textarea>',
+  '<button id="go">开始体检</button>',
+  '<div id="out"></div>',
+  '<div class="hint">判定依据：广告以独立分片插进清单（异域 / 路径带 ad / 夹在断点之间的短段且段长与正片不同）→ 能删；<br>清单上看不出任何异常 → 广告是转码进正片分片的，删不掉，只能换线路或跳过。</div>',
+  '</div><script>',
+  'var out=document.getElementById("out"),go=document.getElementById("go");',
+  'function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]})}',
+  'function row(s){return "<tr><td>"+s.index+"</td><td>"+s.dur+"s</td><td>"+esc(s.uri).slice(0,90)+"</td><td>"+esc(s.reasons.join(", "))+"</td></tr>"}',
+  'go.onclick=function(){',
+  '  var u=document.getElementById("u").value.trim();',
+  '  if(!u)return;',
+  '  go.disabled=true;out.innerHTML="<div class=\\"card\\">正在拉取清单…</div>";',
+  '  fetch("/inspect?u="+encodeURIComponent(u)).then(function(r){return r.json()}).then(function(d){',
+  '    go.disabled=false;',
+  '    if(d.kind==="master"){out.innerHTML="<div class=\\"card\\"><div class=\\"verdict warn\\">这是多码率主清单</div><p class=\\"sub\\" style=\\"margin:8px 0 0\\">广告不在主清单里。把下面的子清单地址再查一次：</p><code>"+esc(d.variants&&d.variants[0]?d.variants[0]:"见 /inspect 原始返回")+"</code></div>";return}',
+  '    if(d.error){out.innerHTML="<div class=\\"card\\"><div class=\\"verdict bad\\">上游没返回 m3u8</div><p class=\\"sub\\" style=\\"margin:8px 0 0\\">"+esc(d.error)+"</p></div>";return}',
+  '    var cls=d.suspectCount?"warn":"ok";',
+  '    var h="<div class=\\"card\\"><div class=\\"verdict "+cls+"\\">"+esc(d.verdict)+"</div>";',
+  '    h+="<div class=\\"kv\\"><div><b>"+d.segments+"</b><span>分片数</span></div><div><b>"+d.totalDuration+"s</b><span>总时长</span></div><div><b>"+d.discontinuities+"</b><span>断点数</span></div><div><b>"+d.medianSegDur+"s</b><span>正片段长中位数</span></div><div><b>"+d.suspectCount+"</b><span>可疑分片</span></div></div>";',
+  '    if(d.hosts){var hs=Object.keys(d.hosts).map(function(k){return "<code>"+esc(k)+"</code> ×"+d.hosts[k]}).join("　");h+="<p class=\\"hint\\" style=\\"margin-top:12px\\">域名分布："+hs+"</p>"}',
+  '    if(d.suspects&&d.suspects.length){h+="<table><tr><th>#</th><th>时长</th><th>地址</th><th>可疑原因</th></tr>"+d.suspects.map(row).join("")+"</table>"}',
+  '    out.innerHTML=h+"</div>";',
+  '  }).catch(function(e){go.disabled=false;out.innerHTML="<div class=\\"card\\"><div class=\\"verdict bad\\">请求失败</div><p class=\\"sub\\">"+esc(e.message)+"</p></div>"});',
+  '};',
+  '</script></body></html>',
+].join('\n');
+
+/* =========================================================
    上游请求
    ========================================================= */
 async function fetchUpstream(target, request) {
@@ -270,13 +322,20 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(originHdr) });
     }
 
-    if (url.pathname === '/' || url.pathname === '/health') {
+    if (url.pathname === '/' || url.pathname === '/ui') {
+      return new Response(UI_HTML, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    if (url.pathname === '/health') {
       return new Response(
         [
           'ok · 闯哥影视中转已就绪',
           '',
+          '/                       体检页面（粘 m3u8 就能看广告能不能删）',
           '/p?u=<encodeURIComponent(源地址)>      播放与分片转发',
-          '/inspect?u=<encodeURIComponent(m3u8)>  清单体检（看广告藏在哪）',
+          '/inspect?u=<encodeURIComponent(m3u8)>  清单体检（JSON）',
           '',
           '广告剥离默认开启，加 &ads=0 可关闭',
         ].join('\n'),
@@ -308,18 +367,46 @@ export default {
 
     /* ---------------- 体检 ---------------- */
     if (isInspect) {
-      const up = await fetchUpstream(target, request);
-      const text = await up.text();
+      let inspectTarget = target;
+      let up = await fetchUpstream(inspectTarget, request);
+      let text = await up.text();
       if (!text.startsWith('#EXTM3U')) {
         return new Response(
           JSON.stringify({ error: '上游未返回 m3u8', status: up.status, head: text.slice(0, 200) }, null, 2),
           { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders('*') } }
         );
       }
+
+      const variantsOf = () =>
+        text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter((l) => l && !l.startsWith('#'))
+          .map((l) => {
+            try {
+              return new URL(l, inspectTarget).href;
+            } catch (e) {
+              return l;
+            }
+          });
+
+      // 粘进来的是主清单就自动跟到第一条子清单，省得用户再转一手
       if (isMaster(text)) {
+        const first = variantsOf()[0];
+        if (first) {
+          inspectTarget = first;
+          up = await fetchUpstream(first, request);
+          text = await up.text();
+        }
+      }
+      if (isMaster(text) || !text.startsWith('#EXTM3U')) {
         return new Response(
           JSON.stringify(
-            { kind: 'master', note: '这是多码率主清单，广告不在这里。请把其中一条子清单地址再 inspect 一次。' },
+            {
+              kind: 'master',
+              variants: variantsOf().slice(0, 12),
+              note: '连子清单都没拿到，把下面任意一条地址单独粘进来再查。',
+            },
             null,
             2
           ),
@@ -327,7 +414,7 @@ export default {
         );
       }
       const pl = parseMediaPlaylist(text);
-      const info = markAds(pl.segs, target);
+      const info = markAds(pl.segs, inspectTarget);
       const suspects = pl.segs
         .map((s, i) => ({ index: i, dur: s.dur, uri: s.uri, reasons: s.reasons }))
         .filter((s) => s.reasons.length)
@@ -335,6 +422,7 @@ export default {
       const total = pl.segs.reduce((a, s) => a + s.dur, 0);
       const out = {
         kind: 'media',
+        picked: inspectTarget !== target ? inspectTarget : undefined,
         segments: pl.segs.length,
         totalDuration: Math.round(total),
         discontinuities: pl.segs.filter((s) => s.discLine >= 0).length,
