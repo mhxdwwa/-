@@ -2117,7 +2117,8 @@ function openPlayer(item) {
 }
 
 function playerIframe(url) {
-  return '<iframe src="'+PLAYERS[curPlayer].url+encodeURIComponent(url)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups" allowfullscreen allow="autoplay;encrypted-media;fullscreen" referrerpolicy="no-referrer"></iframe>'
+  // [FIX] 去掉 allow-popups：解析站无法再弹新窗口/新标签（原先是弹窗广告的入口）
+  return '<iframe src="'+PLAYERS[curPlayer].url+encodeURIComponent(url)+'" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allowfullscreen allow="autoplay;encrypted-media;fullscreen" referrerpolicy="no-referrer"></iframe>'
     + '<div id="adBlockOverlay" style="position:absolute;inset:0;z-index:2147483647;pointer-events:auto;background:transparent;cursor:pointer" onclick="this.style.pointerEvents=\'none\';this.style.zIndex=0;"></div>';
 }
 // Mobile: after first tap absorbed by overlay, auto-hide overlay so second tap goes to video
@@ -4215,16 +4216,48 @@ let _dpUpdateTimer = null;
 let _currentM3u8Url = '';
 let _aggressiveBufferTimer = null;
 
-// Default mode: desktop uses direct mode (直连模式), mobile uses iframe mode (普通模式)
-// User can override via settings
+// ============================================================
+// 自建中转（Cloudflare Worker）
+// 部署 worker.js 之后，把 RELAY_BASE 换成你的 Worker 域名，例如：
+//   var RELAY_BASE = 'https://vrelay.abc123.workers.dev';
+// 留空 = 不走中转，退化成「直连 → 解析线路」两级。
+// 填上之后播放顺序变为：直连 → 中转 → 解析线路（解析线路仅作最后兜底）
+// ============================================================
+var RELAY_BASE = '';
+var _relayAttempted = false;
+var _curSrcUrl = '';
+
+function relayUrl(u) {
+  if (!RELAY_BASE || !u) return u;
+  return RELAY_BASE.replace(/\/+$/, '') + '/p?u=' + encodeURIComponent(u);
+}
+
+// 播放通道角标：让用户一眼看到这集是怎么播出来的
+function setChannelBadge(text, danger) {
+  var el = document.getElementById('dpChannelBadge');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dpChannelBadge';
+    el.style.cssText = 'position:fixed;bottom:110px;right:16px;z-index:222;height:28px;'
+      + 'padding:0 12px;border-radius:14px;display:flex;align-items:center;'
+      + 'font-size:12px;font-weight:600;color:#fff;backdrop-filter:blur(6px);'
+      + 'border:1px solid rgba(255,255,255,.2);pointer-events:none';
+    var mb = document.getElementById('modalBox');
+    if (!mb) return;
+    mb.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.background = danger ? 'rgba(190,60,45,.72)' : 'rgba(0,0,0,.55)';
+}
+
+// [FIX] Default mode: 直连优先（含手机）。只有当直连失败时才自动降级到 iframe。
+// 原逻辑手机默认 iframe 模式，等于强制走第三方解析线路（限速 + 广告）。
 try {
   var _saved = localStorage.getItem('wyh_direct_mode');
   if (_saved !== null) {
     _directMode = _saved === '1';
   } else {
-    // Detect device type
-    var _isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    _directMode = !_isMobile;
+    _directMode = true;
   }
 } catch(e){ _directMode = false; }
 
@@ -4317,6 +4350,8 @@ function injectDPControls() {
 
 function initDirectPlayer(url) {
   destroyHls();
+  _curSrcUrl = url;          // 原始地址，中转失败时回退解析线路要用它
+  _relayAttempted = false;
   _currentM3u8Url = url;
   const video = document.getElementById('dpVideo');
   if(!video) return;
@@ -4346,14 +4381,15 @@ function initDirectPlayer(url) {
     }
   }
 
-  // 网络失败自动回退到iframe模式
+  // 失败降级：直连 → 中转 → 解析线路（解析线路是最后手段，会有广告）
   var _autoFallbackTimeout = null;
-  function _autoFallbackToIframe() {
+
+  function _fallbackToIframe() {
     if (_autoFallbackTimeout) { clearTimeout(_autoFallbackTimeout); _autoFallbackTimeout = null; }
-    console.log('[直连] 加载失败，自动回退到iframe模式');
-    var savedUrl = _currentM3u8Url;
-    // 不永久改变设置，只临时用iframe播放当前集
+    console.log('[播放] 中转不可用，降级到解析线路（此线路可能有广告）');
+    var savedUrl = _curSrcUrl || _currentM3u8Url;
     destroyHls();
+    setChannelBadge('解析线路', true);
     var pa = document.getElementById('playerArea');
     if (pa && savedUrl) {
       pa.innerHTML = _origPlayerIframe(savedUrl);
@@ -4365,55 +4401,68 @@ function initDirectPlayer(url) {
     }
   }
 
-  function _createHls(sourceUrl) {
+  function _escalate(reason) {
+    if (_autoFallbackTimeout) { clearTimeout(_autoFallbackTimeout); _autoFallbackTimeout = null; }
+    // 第二级：走自己的中转，补 CORS / 改 Referer / 缓存分片
+    if (RELAY_BASE && !_relayAttempted) {
+      _relayAttempted = true;
+      console.log('[播放] ' + reason + ' → 切换到中转');
+      setChannelBadge('中转');
+      _createHls(relayUrl(_curSrcUrl), true);
+      return;
+    }
+    _fallbackToIframe();
+  }
+
+  function _createHls(sourceUrl, isRelay) {
     if (_hlsInstance) { try { _hlsInstance.destroy(); } catch(e){} _hlsInstance = null; }
 
     var hls = new Hls({
-      // === 秒开极速策略（优化版） ===
-      maxBufferLength: 15,             // 15秒起播缓冲，平衡速度和流畅度
-      maxMaxBufferLength: 300,         // 播放后逐步缓冲到300秒
-      maxBufferSize: 120 * 1024 * 1024,
-      maxBufferHole: 0.8,             // 容忍更大的buffer空洞，避免卡住
+      // [FIX] 针对 VOD + 采集站共享 CDN 重新调参：原配置是直播/低延迟思路，反而更容易卡
+      maxBufferLength: 30,             // 起播缓冲 30s
+      maxMaxBufferLength: 120,         // 上限 120s（原来 300s 会吃内存、且卡住时恢复更慢）
+      maxBufferSize: 80 * 1024 * 1024,
+      maxBufferHole: 0.5,              // 0.8 容忍太多空洞，容易音画不同步/卡顿
       highBufferWatchdogPeriod: 2,
       nudgeOffset: 0.3,
       nudgeMaxRetry: 10,
       enableWorker: true,
-      lowLatencyMode: true,            // 低延迟模式，更快拉取分片
-      startLevel: -1,                  // 自动选择清晰度，快速连接时直接高清
-      abrEwmaDefaultEstimate: 3000000, // 3Mbps带宽估计，适合大多数网络
-      abrBandWidthFactor: 0.7,
+      lowLatencyMode: false,           // [FIX] 原来是 true，只有直播 LL-HLS 才需要，点播开它会牺牲缓冲
+      startLevel: -1,
+      capLevelToPlayerSize: true,      // [FIX] 按播放器尺寸选清晰度，小窗不硬拉 1080p，省带宽
+      abrEwmaDefaultEstimate: 1500000, // [FIX] 3Mbps 太乐观，起播容易选高码率→转圈；先保守再自动升
+      abrBandWidthFactor: 0.9,
       abrBandWidthUpFactor: 0.7,
-      fragLoadingTimeOut: 8000,
-      fragLoadingMaxRetry: 4,
-      fragLoadingRetryDelay: 200,      // 更快重试
-      manifestLoadingTimeOut: 6000,    // manifest超时缩短
-      manifestLoadingMaxRetry: 3,
-      manifestLoadingRetryDelay: 200,
-      levelLoadingTimeOut: 6000,
+      fragLoadingTimeOut: 20000,       // [FIX] 8000 对共享 CDN 太短，正常慢一点就被判超时→重试→卡
+      fragLoadingMaxRetry: 6,
+      fragLoadingRetryDelay: 500,
+      manifestLoadingTimeOut: 10000,
+      manifestLoadingMaxRetry: 4,
+      manifestLoadingRetryDelay: 500,
+      levelLoadingTimeOut: 10000,
       levelLoadingMaxRetry: 3,
-      levelLoadingRetryDelay: 200,
-      startFragPrefetch: true,         // 预取首个分片
+      levelLoadingRetryDelay: 500,
+      startFragPrefetch: true,
       testBandwidth: true,
-      progressive: true,
-      backBufferLength: 90,
+      backBufferLength: 30,            // [FIX] 90s 回看缓冲在高清下很吃内存，手机易崩
       maxFragLookUpTolerance: 0.25,
-      appendErrorMaxRetry: 5,
-      stretchShortVideoTrack: true,    // 处理短分片
-      // 关键：自定义XHR设置
+      appendErrorMaxRetry: 6,
+      stretchShortVideoTrack: true,
       xhrSetup: function(xhr, xhrUrl) {
-        xhr.timeout = 10000;
+        xhr.timeout = 20000;
       }
     });
     _hlsInstance = hls;
     hls.loadSource(sourceUrl);
     hls.attachMedia(video);
 
-    // 设置6秒超时：如果6秒内没有解析到manifest就回退iframe
+    // [FIX] 原来是 6 秒就放弃直连回退 iframe，采集站冷启动经常超过 6s，
+    // 结果就是"刚打开就掉进解析线路（广告）"。放宽到 12 秒，并且只在真正没数据时回退。
     _autoFallbackTimeout = setTimeout(function() {
       if (_hlsInstance === hls && video.readyState < 2) {
-        _autoFallbackToIframe();
+        _escalate(isRelay ? '中转超时' : '直连超时');
       }
-    }, 6000);
+    }, 12000);
 
     hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
       if (_autoFallbackTimeout) { clearTimeout(_autoFallbackTimeout); _autoFallbackTimeout = null; }
@@ -4421,7 +4470,7 @@ function initDirectPlayer(url) {
       // 播放后放宽缓冲限制让体验更流畅
       setTimeout(function() {
         if (hls && hls.config) {
-          hls.config.maxBufferLength = 60;
+          hls.config.maxBufferLength = 120;
         }
       }, 3000);
     });
@@ -4433,13 +4482,19 @@ function initDirectPlayer(url) {
       // 记住当前播放位置，防止恢复后从头播放
       var savedPos = video.currentTime || 0;
       var wasPlaying = !video.paused;
+      var detail = data.details || '';
       switch(data.type) {
         case Hls.ErrorTypes.NETWORK_ERROR:
+          // manifest 拉不到，多半是 CORS 或防盗链 —— 重试没用，直接升级到中转
+          if (detail.indexOf('manifest') === 0) {
+            _escalate('manifest 失败(' + detail + ')');
+            break;
+          }
           _hlsNetRetry++;
           if (_hlsNetRetry <= 2) {
             hls.startLoad(savedPos);
           } else {
-            _autoFallbackToIframe();
+            _escalate('分片加载失败');
           }
           break;
         case Hls.ErrorTypes.MEDIA_ERROR:
@@ -4454,18 +4509,19 @@ function initDirectPlayer(url) {
               if (wasPlaying && video.paused) video.play();
             }, 300);
           } else {
-            _autoFallbackToIframe();
+            _escalate('解码失败');
           }
           break;
         default:
-          _autoFallbackToIframe();
+          _escalate('致命错误(' + detail + ')');
           break;
       }
     });
   }
 
   if(isM3u8 && typeof Hls !== 'undefined' && Hls.isSupported()) {
-    _createHls(url);
+    setChannelBadge('直连');
+    _createHls(url, false);
   } else if(isM3u8 && video.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari native HLS
     video.src = url;
@@ -5149,6 +5205,32 @@ loadHome(); // 页面加载时立即显示首页推荐列表
     var delay = Math.random() * -20;
     el.style.cssText = 'position:absolute;left:'+x+'%;top:'+y+'%;font-size:'+size+'px;opacity:0.06;animation:floatDeco '+dur+'s ease-in-out '+delay+'s infinite;filter:blur(0.5px);';
     container.appendChild(el);
+  }
+})();
+
+// === 调试入口：?test=<encodeURIComponent(直链)> 直接播放任意 m3u8 / mp4 ===
+// 用途：不搜索、不依赖采集接口，直接验证某条源能不能播、走的是直连还是中转。
+// 例：index.html?test=https%3A%2F%2Fxxx.com%2Fplay.m3u8
+(function(){
+  function bootTest(){
+    var t;
+    try { t = new URLSearchParams(location.search).get('test'); } catch(e){ return; }
+    if (!t) return;
+    var u = t;
+    try { u = decodeURIComponent(t); } catch(e){}
+    setTimeout(function(){
+      if (typeof openPlayer !== 'function') return;
+      openPlayer({
+        name: '\u8c03\u8bd5\u76f4\u94fe',
+        playFrom: 'm3u8$$$',
+        playUrl: '\u7b2c01\u96c6$' + u + '$$$'
+      });
+    }, 500);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootTest);
+  } else {
+    bootTest();
   }
 })();
 </script>
