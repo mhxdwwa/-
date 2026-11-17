@@ -51,10 +51,16 @@ function corsHeaders(origin) {
 const AD_TOKENS =
   /(?:^|[\/_\-.])(ad|ads|adv|advert|advideo|guanggao|gg|sponsor|preroll|midroll|postroll|commercial|spot|tuiguang|win|bet)(?:[\/_\-.]|$)/i;
 
+/* 采集源自己写在清单里的广告标记。实测「量子」系会写：
+     # ppvod-ad-injected v1
+   有这行的话就是铁证，直接按它切。 */
+const AD_MARKER = /(?:ad[-_\s]?inject|ppvod-ad|advert|guanggao|插入广告)/i;
+
 /** 把媒体清单拆成「分片 + 它的标签行号」 */
 function parseMediaPlaylist(text) {
   const lines = text.split(/\r?\n/);
   const segs = [];
+  const adMarkers = [];
   let extinf = -1;
   let byterange = -1;
   let disc = -1;
@@ -63,9 +69,12 @@ function parseMediaPlaylist(text) {
     const s = lines[i].trim();
     if (!s) continue;
     if (s.startsWith('#')) {
+      // 非 EXT 标签的注释行，可能是源站标记的广告位
+      if (!/^#EXT/i.test(s) && AD_MARKER.test(s)) adMarkers.push(i);
       if (s.startsWith('#EXTINF')) extinf = i;
       else if (s.startsWith('#EXT-X-BYTERANGE')) byterange = i;
       else if (s.startsWith('#EXT-X-DISCONTINUITY')) disc = i;
+      else if (s.startsWith('#EXT-X-CUE-OUT')) disc = i; // SCTE-35 插播开头，按断点处理
       continue;
     }
     const dm = extinf >= 0 ? lines[extinf].match(/#EXTINF:\s*([\d.]+)/) : null;
@@ -82,7 +91,7 @@ function parseMediaPlaylist(text) {
     byterange = -1;
     disc = -1;
   }
-  return { lines, segs };
+  return { lines, segs, adMarkers };
 }
 
 function absHost(uri, baseUrl) {
@@ -93,8 +102,24 @@ function absHost(uri, baseUrl) {
   }
 }
 
+/** 分片所在的「目录根」= 路径前两段目录（不含文件名）。
+ *  实测广告是别的一部片子的切片，目录根和正片完全不同：
+ *    正片 /20261114/22052_d564e87a/2000k/hls/x.ts → 20261114/22052_d564e87a
+ *    广告 /20261003/84_9109598f/2000k/hls/x.ts   → 20261003/84_9109598f
+ *  目录层级不足两段时取实际目录，避免把文件名也当成根。 */
+function pathRoot(uri, baseUrl) {
+  try {
+    const parts = new URL(uri, baseUrl).pathname.split('/').filter(Boolean);
+    const dirs = parts.slice(0, -1);
+    if (!dirs.length) return '';
+    return dirs.slice(0, Math.min(2, dirs.length)).join('/');
+  } catch (e) {
+    return '';
+  }
+}
+
 /** 标记可疑分片，返回被标记的分片索引集合 */
-function markAds(segs, baseUrl) {
+function markAds(segs, baseUrl, adMarkers) {
   const hostCount = {};
   segs.forEach((s) => {
     const h = absHost(s.uri, baseUrl);
@@ -103,14 +128,36 @@ function markAds(segs, baseUrl) {
   const hosts = Object.keys(hostCount).sort((a, b) => hostCount[b] - hostCount[a]);
   const dominant = hosts[0] || '';
 
+  // 少于 8 段时不做统计类判断 —— 短片源经常把首尾段放另一个域名，容易误伤
+  const big = segs.length >= 8;
+
   // 规则 a：域名异常（少数派域名）
-  // 少于 8 段时不做域名判断 —— 短片源经常把首尾段放另一个域名，容易误伤
-  if (segs.length >= 8) {
+  if (big) {
+    const lim = Math.max(3, hostCount[dominant] * 0.15);
     segs.forEach((s) => {
       const h = absHost(s.uri, baseUrl);
-      if (h && h !== dominant && hostCount[h] <= Math.max(2, segs.length * 0.05)) {
-        s.reasons.push('host:' + h);
-      }
+      if (h && h !== dominant && hostCount[h] <= lim) s.reasons.push('host:' + h);
+    });
+  }
+
+  /* 规则 a2：目录根异常 —— 实测最有效的一条。
+     广告是把另一部片子的切片直接塞进来，域名还是同一个，但目录根完全不同：
+       正片  /20261114/22052_d564e87a/2000k/hls/xxx.ts
+       广告  /20261003/84_9109598f/2000k/hls/xxx.ts
+     同域所以规则 a 抓不到，必须比路径前两段。 */
+  const rootCount = {};
+  segs.forEach((s) => {
+    const r = pathRoot(s.uri, baseUrl);
+    if (r) rootCount[r] = (rootCount[r] || 0) + 1;
+  });
+  const rootKeys = Object.keys(rootCount).sort((a, b) => rootCount[b] - rootCount[a]);
+  const domRoot = rootKeys[0] || '';
+  // 根目录太碎就说明这个源的路径没有规律，别用这条规则，免得全判成广告
+  const rootLim = Math.max(3, (rootCount[domRoot] || 0) * 0.15);
+  if (big && rootKeys.length > 1 && rootKeys.length <= segs.length * 0.3) {
+    segs.forEach((s) => {
+      const r = pathRoot(s.uri, baseUrl);
+      if (r && r !== domRoot && rootCount[r] <= rootLim) s.reasons.push('root:' + r);
     });
   }
 
@@ -119,7 +166,7 @@ function markAds(segs, baseUrl) {
     if (AD_TOKENS.test(s.uri)) s.reasons.push('token');
   });
 
-  // 规则 c：夹在两条断点之间的短岛
+  // 规则 c：断点分组（#EXT-X-DISCONTINUITY / #EXT-X-CUE-OUT 都算断点）
   const runs = [];
   let cur = null;
   segs.forEach((s, idx) => {
@@ -132,29 +179,51 @@ function markAds(segs, baseUrl) {
     cur.dur += s.dur;
     cur.end = idx;
   });
+  const runOfSeg = (idx) => {
+    for (let i = 0; i < runs.length; i++) if (idx >= runs[i].start && idx <= runs[i].end) return i;
+    return -1;
+  };
 
-  // 先挑出「中段 + 8~25 秒 + 不超过 6 段」的候选岛
+  // 规则 d：源站自己写的广告标记（最硬的证据，看到就切）
+  const markedRuns = new Set();
+  (adMarkers || []).forEach((ln) => {
+    const first = segs.findIndex((s) => s.line > ln);
+    if (first < 0) return;
+    const ri = runOfSeg(first);
+    if (ri < 0) return;
+    if (runs[ri].count > 40) return; // 太长的组不当作广告，防误杀
+    markedRuns.add(ri);
+  });
+
+  // 候选岛：中段、5~45 秒、不超过 12 段
   const cand = [];
   runs.forEach((r, ri) => {
     if (ri === 0 || ri === runs.length - 1) return; // 首尾不算，避免误伤片头片尾
-    if (r.dur < 8 || r.dur > 25) return;
-    if (r.count > 6) return;
+    if (r.dur < 5 || r.dur > 45) return;
+    if (r.count > 12) return;
     cand.push(r);
   });
 
-  // 正片自己的分片时长中位数。广告是另一次转码，段长通常和正片不一样
+  // 正片分片时长的中位数。广告是另一次转码，段长常常和正片对不上
   const durs = segs.map((s) => s.dur).filter((d) => d > 0).sort((x, y) => x - y);
   const median = durs.length ? durs[Math.floor(durs.length / 2)] : 0;
 
-  /* 广告位置是随机的（第 5 分钟、快结束、中间不定时），不能靠"重复出现"来确认。
-     所以单个岛必须自己站得住脚，满足任意一条才算广告：
-       甲. 岛内分片所在域名/路径本身就可疑
-       乙. 岛内平均段长和正片中位数差 35% 以上（另一次转码的铁证）
-       丙. 清单里还有别的时长相近的岛（有规律更好，没有也不影响）           */
+  /* 广告位置随机（第 5 分钟、快结束、中间不定时），不能靠"重复出现"确认，
+     所以单个岛必须自己站得住脚，满足任意一条才算：
+       甲. 源站自己写了广告标记
+       乙. 岛内有分片被域名/目录根/关键词规则盯上
+       丙. 岛内平均段长和正片中位数差 35% 以上
+       丁. 清单里还有别的时长相近的岛
+     只有 confirmed 的组会被真正删除；reasons 里其余标记只用于体检展示。 */
   const confirmed = new Set();
   cand.forEach((r, i) => {
-    const first = segs[r.start];
-    if (first.reasons.length) {
+    if (markedRuns.has(runOfSeg(r.start))) {
+      confirmed.add(i);
+      return;
+    }
+    let hit = false;
+    for (let k = r.start; k <= r.end && !hit; k++) if (segs[k].reasons.length) hit = true;
+    if (hit) {
       confirmed.add(i);
       return;
     }
@@ -173,24 +242,45 @@ function markAds(segs, baseUrl) {
     }
   });
 
+  segs.forEach((s) => { s.ad = false });
+  let adCount = 0;
   confirmed.forEach((i) => {
     const r = cand[i];
     for (let k = r.start; k <= r.end; k++) {
+      segs[k].ad = true;
+      adCount++;
       if (segs[k].reasons.indexOf('island') < 0) segs[k].reasons.push('island');
     }
   });
 
-  return { hosts, hostCount, dominant, runs, islands: cand, confirmed: confirmed.size, medianSegDur: median };
+  // 路径里明写 ad/gg/guanggao 的，证据足够硬，不需要断点包围也直接删
+  segs.forEach((s) => {
+    if (!s.ad && s.reasons.indexOf('token') >= 0) { s.ad = true; adCount++; }
+  });
+
+  return {
+    hosts,
+    hostCount,
+    dominant,
+    rootCount,
+    domRoot,
+    runs,
+    islands: cand,
+    markedRuns: markedRuns.size,
+    confirmed: confirmed.size,
+    adCount,
+    medianSegDur: median,
+  };
 }
 
-/** 从清单里删掉被标记的分片。只删 EXTINF / BYTERANGE / URI 三行，
- *  其余标签（KEY、MAP、DISCONTINUITY）原样保留 —— 少删比错删安全。 */
+/** 从清单里删掉被判定为广告的分片（只看 s.ad，reasons 里的其余标记不动手）。
+ *  只删 EXTINF / BYTERANGE / URI 三行，其余标签（KEY、MAP、DISCONTINUITY）原样保留。 */
 function stripAdSegments(playlist) {
   const { lines, segs } = playlist;
   const drop = new Set();
   let removed = 0;
   segs.forEach((s) => {
-    if (!s.reasons.length) return;
+    if (!s.ad) return;
     removed++;
     drop.add(s.line);
     if (s.extinfLine >= 0) drop.add(s.extinfLine);
@@ -269,7 +359,7 @@ const UI_HTML = [
   '<textarea id="u" placeholder="https://xxx.com/20250101/abcd/index.m3u8"></textarea>',
   '<button id="go">开始体检</button>',
   '<div id="out"></div>',
-  '<div class="hint">判定依据：广告以独立分片插进清单（异域 / 路径带 ad / 夹在断点之间的短段且段长与正片不同）→ 能删；<br>清单上看不出任何异常 → 广告是转码进正片分片的，删不掉，只能换线路或跳过。</div>',
+  '<div class="hint">判定依据：广告是拿另一部片子的切片塞进来的，所以「目录根」和正片不同（同一域名也一样），另外还看路径关键词、源站自写的广告标记。<br>清单里连断点都没有 → 广告是转码进正片分片的，删不掉，只能换线路或跳过。</div>',
   '</div><script>',
   'var out=document.getElementById("out"),go=document.getElementById("go");',
   'function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]})}',
@@ -286,6 +376,7 @@ const UI_HTML = [
   '    var h="<div class=\\"card\\"><div class=\\"verdict "+cls+"\\">"+esc(d.verdict)+"</div>";',
   '    h+="<div class=\\"kv\\"><div><b>"+d.segments+"</b><span>分片数</span></div><div><b>"+d.totalDuration+"s</b><span>总时长</span></div><div><b>"+d.discontinuities+"</b><span>断点数</span></div><div><b>"+d.medianSegDur+"s</b><span>正片段长中位数</span></div><div><b>"+d.suspectCount+"</b><span>可疑分片</span></div></div>";',
   '    if(d.hosts){var hs=Object.keys(d.hosts).map(function(k){return "<code>"+esc(k)+"</code> ×"+d.hosts[k]}).join("　");h+="<p class=\\"hint\\" style=\\"margin-top:12px\\">域名分布："+hs+"</p>"}',
+  '    if(d.pathRoots&&Object.keys(d.pathRoots).length>1){var rs=Object.keys(d.pathRoots).map(function(k){return "<code>"+esc(k)+"</code> ×"+d.pathRoots[k]}).join("　");h+="<p class=\\"hint\\" style=\\"margin-top:6px\\">目录根分布："+rs+"</p>"}',
   '    if(d.suspects&&d.suspects.length){h+="<table><tr><th>#</th><th>时长</th><th>地址</th><th>可疑原因</th></tr>"+d.suspects.map(row).join("")+"</table>"}',
   '    out.innerHTML=h+"</div>";',
   '  }).catch(function(e){go.disabled=false;out.innerHTML="<div class=\\"card\\"><div class=\\"verdict bad\\">请求失败</div><p class=\\"sub\\">"+esc(e.message)+"</p></div>"});',
@@ -414,7 +505,7 @@ export default {
         );
       }
       const pl = parseMediaPlaylist(text);
-      const info = markAds(pl.segs, inspectTarget);
+      const info = markAds(pl.segs, inspectTarget, pl.adMarkers);
       const suspects = pl.segs
         .map((s, i) => ({ index: i, dur: s.dur, uri: s.uri, reasons: s.reasons }))
         .filter((s) => s.reasons.length)
@@ -428,6 +519,9 @@ export default {
         discontinuities: pl.segs.filter((s) => s.discLine >= 0).length,
         hosts: info.hostCount,
         dominantHost: info.dominant,
+        pathRoots: info.rootCount,
+        dominantRoot: info.domRoot,
+        adMarkers: pl.adMarkers.length,
         runs: info.runs.slice(0, 40).map((r) => ({
           from: r.start,
           to: r.end,
@@ -447,7 +541,9 @@ export default {
         verdict:
           suspects.length > 0
             ? '有可疑分片，中转会自动剥掉（见 suspects）'
-            : '清单里没有可疑分片 —— 广告很可能是把正片分片转码时拼进去的，删不掉，只能用跳过策略',
+            : info.runs.length <= 1
+              ? '清单里连断点都没有 —— 这个源没在清单层面插广告；如果你确实看到广告，那是转码进正片分片里的，删不掉'
+              : '有断点，但没有一组的特征像广告 —— 广告很可能是转码进正片分片里的，删不掉',
       };
       return new Response(JSON.stringify(out, null, 2), {
         headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders('*') },
@@ -487,7 +583,7 @@ export default {
       // 主清单不动广告，只重写；媒体清单先剥广告再重写
       if (!isMaster(text) && adsOn) {
         const pl = parseMediaPlaylist(text);
-        markAds(pl.segs, target);
+        markAds(pl.segs, target, pl.adMarkers);
         const r = stripAdSegments(pl);
         body = r.text;
         adsRemoved = r.removed;
