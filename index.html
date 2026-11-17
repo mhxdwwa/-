@@ -4274,6 +4274,175 @@ try {
     : '未配置 —— 把 Worker 域名写进仓库根目录 relay.txt，或在本页地址后加 ?relay=https://你的.workers.dev'));
 } catch (e) {}
 
+// ============================================================
+// 播放器内置去广告
+// hls.js 拿到清单文本后、解析之前剪一刀，把插播的广告分片剔掉。
+// 不依赖中转：只要源站给了 CORS（量子系就是 Access-Control-Allow-Origin: *），
+// 这一段就能在浏览器里直接把那 25 秒赌场广告剪掉。
+// 判定逻辑和 worker.js 里的保持一致：源站标记 / 目录根异常 / 域名异常 / 路径关键词 / 断点短岛。
+// ============================================================
+var _AD_TOKENS = /(?:^|[\/_\-.])(ad|ads|adv|advert|advideo|guanggao|gg|sponsor|preroll|midroll|postroll|commercial|spot|tuiguang|win|bet)(?:[\/_\-.]|$)/i;
+var _AD_MARKER = /(?:ad[-_\s]?inject|ppvod-ad|advert|guanggao|插入广告)/i;
+
+function _absUrl(u, base) {
+  try { return new URL(u, base).href; } catch (e) { return u; }
+}
+
+// 目录根 = 路径前两段目录（不含文件名）。广告切片来自另一部片子，目录根和正片不同
+function _pathRoot(u, base) {
+  try {
+    var p = new URL(u, base).pathname.split('/').filter(Boolean);
+    var d = p.slice(0, -1);
+    return d.length ? d.slice(0, Math.min(2, d.length)).join('/') : '';
+  } catch (e) { return ''; }
+}
+
+function _stripAdsFromText(text, baseUrl) {
+  if (!text || text.indexOf('#EXTM3U') !== 0) return null;
+  var lines = text.split(/\r?\n/);
+  var segs = [], markers = [], extinf = -1, disc = -1, i;
+
+  for (i = 0; i < lines.length; i++) {
+    var s = lines[i].trim();
+    if (!s) continue;
+    if (s.charAt(0) === '#') {
+      if (!/^#EXT/i.test(s) && _AD_MARKER.test(s)) markers.push(i);
+      if (s.indexOf('#EXTINF') === 0) extinf = i;
+      else if (s.indexOf('#EXT-X-DISCONTINUITY') === 0 || s.indexOf('#EXT-X-CUE-OUT') === 0) disc = i;
+      continue;
+    }
+    var m = extinf >= 0 ? /#EXTINF:\s*([\d.]+)/.exec(lines[extinf]) : null;
+    segs.push({ line: i, uri: s, dur: m ? parseFloat(m[1]) : 0, extinfLine: extinf, discLine: disc, sus: '' });
+    extinf = -1; disc = -1;
+  }
+  if (segs.length < 8) return null;
+
+  var hostCount = {}, rootCount = {};
+  segs.forEach(function (sg) {
+    var h = '';
+    try { h = new URL(_absUrl(sg.uri, baseUrl)).host; } catch (e) {}
+    if (h) hostCount[h] = (hostCount[h] || 0) + 1;
+    var r = _pathRoot(sg.uri, baseUrl);
+    if (r) rootCount[r] = (rootCount[r] || 0) + 1;
+  });
+  var hostKeys = Object.keys(hostCount).sort(function (a, b) { return hostCount[b] - hostCount[a]; });
+  var rootKeys = Object.keys(rootCount).sort(function (a, b) { return rootCount[b] - rootCount[a]; });
+  var domHost = hostKeys[0] || '', domRoot = rootKeys[0] || '';
+  var hostLim = Math.max(3, (hostCount[domHost] || 0) * 0.15);
+  var rootLim = Math.max(3, (rootCount[domRoot] || 0) * 0.15);
+  var rootSane = rootKeys.length > 1 && rootKeys.length <= segs.length * 0.3;
+
+  segs.forEach(function (sg) {
+    var h = '';
+    try { h = new URL(_absUrl(sg.uri, baseUrl)).host; } catch (e) {}
+    if (h && h !== domHost && hostCount[h] <= hostLim) sg.sus = 'host';
+    var r = _pathRoot(sg.uri, baseUrl);
+    if (!sg.sus && rootSane && r && r !== domRoot && rootCount[r] <= rootLim) sg.sus = 'root';
+    if (!sg.sus && _AD_TOKENS.test(sg.uri)) sg.sus = 'token';
+  });
+
+  // 断点分组
+  var runs = [], cur = null;
+  segs.forEach(function (sg, idx) {
+    if (!cur || sg.discLine >= 0) { cur = { start: idx, count: 0, dur: 0, end: idx }; runs.push(cur); }
+    cur.count++; cur.dur += sg.dur; cur.end = idx;
+  });
+  function runOf(idx) {
+    for (var k = 0; k < runs.length; k++) if (idx >= runs[k].start && idx <= runs[k].end) return k;
+    return -1;
+  }
+
+  // 源站自己写的广告标记
+  var marked = {};
+  markers.forEach(function (ln) {
+    for (var k = 0; k < segs.length; k++) {
+      if (segs[k].line > ln) {
+        var ri = runOf(k);
+        if (ri >= 0 && runs[ri].count <= 40) marked[ri] = 1;
+        return;
+      }
+    }
+  });
+
+  var durs = segs.map(function (sg) { return sg.dur; }).filter(function (d) { return d > 0; }).sort(function (a, b) { return a - b; });
+  var median = durs.length ? durs[Math.floor(durs.length / 2)] : 0;
+
+  var cand = [];
+  runs.forEach(function (r, ri) {
+    if (ri === 0 || ri === runs.length - 1) return;   // 首尾不判，避免误伤片头片尾
+    if (r.dur < 5 || r.dur > 45) return;
+    if (r.count > 12) return;
+    cand.push(r);
+  });
+
+  var confirmed = {};
+  cand.forEach(function (r, ci) {
+    if (marked[runOf(r.start)]) { confirmed[ci] = 1; return; }
+    var hit = false;
+    for (var k = r.start; k <= r.end && !hit; k++) if (segs[k].sus) hit = true;
+    if (hit) { confirmed[ci] = 1; return; }
+    var avg = r.dur / r.count;
+    if (median > 0 && Math.abs(avg - median) > median * 0.35) { confirmed[ci] = 1; return; }
+    for (var j = 0; j < cand.length; j++) {
+      if (j === ci) continue;
+      var o = cand[j].dur;
+      if (Math.abs(o - r.dur) <= Math.max(2, Math.min(o, r.dur) * 0.3)) { confirmed[ci] = 1; return; }
+    }
+  });
+
+  var drop = {}, removed = 0;
+  Object.keys(confirmed).forEach(function (ci) {
+    var r = cand[ci];
+    for (var k = r.start; k <= r.end; k++) {
+      drop[segs[k].line] = 1;
+      if (segs[k].extinfLine >= 0) drop[segs[k].extinfLine] = 1;
+      removed++;
+    }
+  });
+  segs.forEach(function (sg) {
+    if (sg.sus === 'token' && !drop[sg.line]) {
+      drop[sg.line] = 1;
+      if (sg.extinfLine >= 0) drop[sg.extinfLine] = 1;
+      removed++;
+    }
+  });
+  if (!removed) return null;
+
+  // 挖掉广告岛会留下连续两条断点，合并成一条（不合并 hls.js 会告警）
+  var out = [], prevDisc = false;
+  for (i = 0; i < lines.length; i++) {
+    if (drop[i]) continue;
+    var isDisc = lines[i].trim() === '#EXT-X-DISCONTINUITY';
+    if (isDisc && prevDisc) continue;
+    prevDisc = isDisc;
+    out.push(lines[i]);
+  }
+  return { text: out.join('\n'), removed: removed };
+}
+
+// 包一层 hls.js 的清单加载器：解析前把广告剪掉
+function _makeAdLoader(Base) {
+  return class AdStripLoader extends Base {
+    load(context, config, callbacks) {
+      var orig = callbacks.onSuccess;
+      callbacks.onSuccess = function (response, stats, ctx, xhr) {
+        try {
+          if (response && typeof response.data === 'string' && response.data.indexOf('#EXTM3U') === 0) {
+            var base = (ctx && ctx.url) || response.url || _curSrcUrl;
+            var r = _stripAdsFromText(response.data, base);
+            if (r) {
+              console.log('[去广告] 剪掉 ' + r.removed + ' 个广告分片 · ' + base);
+              response.data = r.text;
+            }
+          }
+        } catch (e) {}
+        orig(response, stats, ctx, xhr);
+      };
+      super.load(context, config, callbacks);
+    }
+  };
+}
+
 function relayUrl(u) {
   if (!RELAY_BASE || !u) return u;
   return RELAY_BASE.replace(/\/+$/, '') + '/p?u=' + encodeURIComponent(u);
@@ -4495,7 +4664,7 @@ function initDirectPlayer(url) {
   function _createHls(sourceUrl, isRelay) {
     if (_hlsInstance) { try { _hlsInstance.destroy(); } catch(e){} _hlsInstance = null; }
 
-    var hls = new Hls({
+    var _cfg = {
       // [FIX] 针对 VOD + 采集站共享 CDN 重新调参：原配置是直播/低延迟思路，反而更容易卡
       maxBufferLength: 30,             // 起播缓冲 30s
       maxMaxBufferLength: 120,         // 上限 120s（原来 300s 会吃内存、且卡住时恢复更慢）
@@ -4529,7 +4698,18 @@ function initDirectPlayer(url) {
       xhrSetup: function(xhr, xhrUrl) {
         xhr.timeout = 20000;
       }
-    });
+    };
+
+    // 挂上"清单加载时顺手剪广告"的加载器（源站允许 CORS 才有效，不允许就静静跳过）
+    try {
+      if (Hls.DefaultConfig && Hls.DefaultConfig.loader) {
+        _cfg.pLoader = _makeAdLoader(Hls.DefaultConfig.loader);
+      }
+    } catch (e) {
+      console.warn('[去广告] 加载器挂载失败，跳过：' + e.message);
+    }
+
+    var hls = new Hls(_cfg);
     _hlsInstance = hls;
     hls.loadSource(sourceUrl);
     hls.attachMedia(video);
